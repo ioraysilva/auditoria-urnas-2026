@@ -1,0 +1,7 @@
+marca,real,simulado_media,simulado_min,simulado_max
+Inversão Flávio → Lula,31395,29676,29458,29896
+Inversão Lula → Flávio,565,1076,1021,1145
+Flávio zerou (tinha 10+),1,263,240,285
+Flávio caiu mais de 30%,635,3405,3334,3498
+Lula caiu mais de 30%,75,414,392,439
+Fora do esperado (4+ desvios),402,32,21,42

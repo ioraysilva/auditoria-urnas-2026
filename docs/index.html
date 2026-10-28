@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoria 2º turno 2026</title>
+<meta name="description" content="Boletins de urna do TSE, 2º turno presidencial de 2026: soma, recontagem pelo RDV, comparação com o 1º turno e curva da apuração.">
+<style>
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-font-size-title: 2rem; --cds-font-size-heading: 1.35rem; --cds-font-size-body: 1rem; --cds-font-size-caption: .85rem;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: .25rem; --cds-gap-sm: .5rem; --cds-gap-md: 1rem; --cds-gap-lg: 1.5rem; --cds-gap-xl: 2.5rem;
+    --cds-pad-xs: .25rem; --cds-pad-sm: .5rem; --cds-pad-lg: 1.25rem; --cds-radius: 8px; --cds-dur-slow: .3s;
+    --color-bg: #f6f5f1; --color-panel: #ffffff; --color-fg: #1f1e1c; --color-fg-muted: #6b6862;
+    --color-border-line: #e2dfd8; --color-ok: #1a7f4b; --color-bad: #c0392b; --color-warn: #b7791f;
+    --cds-border: #d6d3cc; --cds-surface-popover: #ffffff; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+    --cds-text-secondary: #6b6862; --cds-chart-axis: #b9b5ad; --cds-chart-grid: #ece9e2; --cds-chart-reference: #8a867e;
+    --cds-chart-status-critical: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #1b1a18; --color-panel: #252421; --color-fg: #ecebe8; --color-fg-muted: #a5a29b;
+      --color-border-line: #3a3834; --color-ok: #4cc38a; --color-bad: #f0715f; --color-warn: #e0a64a;
+      --cds-border: #45423d; --cds-surface-popover: #2c2b28; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5);
+      --cds-text-secondary: #a5a29b; --cds-chart-axis: #5a5751; --cds-chart-grid: #34322e; --cds-chart-reference: #8f8b83;
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-bg: #1b1a18; --color-panel: #252421; --color-fg: #ecebe8; --color-fg-muted: #a5a29b;
+    --color-border-line: #3a3834; --color-ok: #4cc38a; --color-bad: #f0715f; --color-warn: #e0a64a;
+    --cds-border: #45423d; --cds-surface-popover: #2c2b28; --cds-text-secondary: #a5a29b;
+    --cds-chart-axis: #5a5751; --cds-chart-grid: #34322e; --cds-chart-reference: #8f8b83;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 16px 4rem; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+  a { color: inherit; }
+  .lx code { font-size: .85em; word-break: break-all; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// Substitui o ambiente do painel: dados vêm de dados/<nome>.csv
+(() => {
+  const DATASETS = ['acima_sobra', 'biometria', 'comparecimento', 'curva', 'curva_delta', 'decis', 'destaques', 'fontes', 'gerais', 'hipoteses', 'hist', 'historico', 'injecao', 'inversao', 'inversao_testes', 'janela_uf', 'janelas', 'marcas', 'municipios', 'permutacao', 'pontos', 'rdv_brasil', 'recontagem', 'salto_comparecimento', 'totais', 'totalizacao', 'transferencia', 'uf', 'viradas_mg', 'viradas_uf'];
+  const store = {}, calcs = {}, draws = {};
+  let pronto = false;
+  const rodar = (nome) => {
+    const fn = draws[nome];
+    if (!fn || !pronto) return;
+    document.querySelectorAll(`[data-draw="${nome}"]`).forEach((el) => { try { fn(el); } catch (e) { console.error(nome, e); } });
+  };
+  window.dash = {
+    data: (nome) => {
+      if (nome in store) return {status: 'ok', data: store[nome]};
+      const c = calcs[nome];
+      if (c && c.inputs.every((i) => i in store)) { store[nome] = c.fn(...c.inputs.map((i) => store[i])); return {status: 'ok', data: store[nome]}; }
+      return {status: pronto ? 'error' : 'loading', data: []};
+    },
+    calc: (nome, def) => { calcs[nome] = def; },
+    draw: (nome, fn) => { if (fn) draws[nome] = fn; rodar(nome); },
+  };
+  Promise.all(DATASETS.map((n) => fetch(`dados/${n}.csv`).then((r) => r.text()).then((t) => { store[n] = d3.csvParse(t, d3.autoType); })))
+    .then(() => { pronto = true; Object.keys(draws).forEach(rodar); })
+    .catch((e) => { document.body.insertAdjacentHTML('afterbegin', `<p style="color:#c0392b">Erro ao carregar os dados: ${e}</p>`); });
+  let w = window.innerWidth;
+  window.addEventListener('resize', () => { if (Math.abs(window.innerWidth - w) > 40) { w = window.innerWidth; Object.keys(draws).forEach(rodar); } });
+})();
+</script>
+</head>
+<body>
+<script src="mapa_br.js"></script>
+<script src="mapa_mg.js"></script>
+<style>
+  .lx { display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); max-width: 72rem; margin-inline: auto; }
+  .lx h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .lx h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+  .lx h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .lx p { margin: 0; line-height: 1.5; max-width: 68ch; }
+  .lx .muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .lx .sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+  .lx .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--cds-gap-md); }
+  .lx .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+  .lx .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cds-gap-md); }
+  .lx .tile .num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; }
+  .lx .ok { color: var(--color-ok); }
+  .lx .bad { color: var(--color-bad); }
+  .lx .page b { font-weight: 600; }
+  .lx .tw { overflow: auto; max-height: 26rem; }
+  .lx table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .lx th, .lx td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .lx th:first-child, .lx td:first-child { text-align: left; }
+  .lx td.wrap { white-space: normal; text-align: left; min-width: 14rem; }
+  .lx th { position: sticky; top: 0; background: var(--color-panel); font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
+  .lx .chart { position: relative; min-height: 300px; }
+  .lx .chart.short { min-height: 240px; }
+  .lx .chart.tall { min-height: 400px; }
+  .lx .card.alerta { border-color: var(--color-warn); }
+  .lx .chip { align-self: flex-start; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); padding: 2px var(--cds-pad-sm); border-radius: 999px; border: 1px solid currentColor; }
+  .lx .chip.bad { color: var(--color-bad); } .lx .chip.warn { color: var(--color-warn); } .lx .chip.ok { color: var(--color-ok); }
+  .lx .mapas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--cds-gap-lg); }
+  .lx .mapa { display: flex; flex-direction: column; gap: var(--cds-gap-xs); min-width: 0; }
+  .lx .chart.map { min-height: 260px; }
+  .lx .sliders { display: grid; grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr); gap: var(--cds-gap-xs) var(--cds-gap-md); align-items: center; font-size: var(--cds-font-size-caption); max-width: 40rem; }
+  .lx .sliders input { width: 100%; accent-color: var(--lx-c0); }
+  .lx .sim-msg.bad { color: var(--color-bad); font-weight: 600; }
+  .lx tr.alerta td { color: var(--color-bad); font-weight: 600; }
+  .lx .ctrls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
+  .lx .seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+  .lx .seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); background: transparent; color: var(--color-fg-muted); border: 0; cursor: pointer; }
+  .lx .seg button + button { border-left: 1px solid var(--color-border-line); }
+  .lx .seg button[aria-pressed="true"] { background: var(--color-bg); color: var(--color-fg); }
+  .lx .seg button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: -2px; }
+  .lx .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2; }
+  .lx .tip .t { color: var(--cds-text-secondary); }
+  .lx .sw { display: inline-block; width: .6rem; height: .6rem; border-radius: 2px; margin-right: .35rem; }
+  .lx .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx .sw.s0 { background: var(--lx-c0); } .lx .sw.s1 { background: var(--lx-c1); } .lx .sw.band { background: var(--cds-chart-grid); } .lx .sw.muted { background: var(--color-fg-muted); }
+  .lx ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: var(--cds-gap-xs); max-width: 68ch; line-height: 1.5; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  [data-dash-source-state=empty] { color: transparent; }
+</style>
+
+<div class="lx page">
+  <header class="sec">
+    <h1>Lula x Flávio, urna a urna</h1>
+    <p>A soma dos <b data-draw="v" data-source="totais" data-field="soma_bus_2t" data-where="item=Comparecimento" data-fmt="int">—</b> votos registrados nos boletins de urna do 2º turno é igual ao total oficial do TSE em <b data-draw="v" data-source="municipios" data-field="identicos" data-fmt="int">—</b> de <b data-draw="v" data-source="municipios" data-field="comparados" data-fmt="int">—</b> municípios. A curva da apuração e a comparação seção a seção não mostram votos tirados de Flávio na totalização; os desvios que aparecem seguem a região de onde os boletins chegaram.</p>
+    <p class="muted">2º turno de 25/10/2026, Presidente. Fontes: boletins de urna (.bu) baixados de resultados.tse.jus.br, resultado oficial por município do mesmo site e boletins do 1º turno do Portal de Dados Abertos do TSE (bweb). Cálculos próprios.</p>
+  </header>
+
+  <section class="sec" id="gerais">
+    <h2>Destaques gerais: a conta do 2º turno</h2>
+    <div class="tiles">
+      <div class="card tile alerta"><span class="muted">Lula a mais que no 1º turno</span><span class="num" data-draw="v" data-source="gerais" data-where="id=ganho" data-field="a" data-fmt="int">—</span><span class="muted">cresceu em <span data-draw="v" data-source="gerais" data-where="id=secoes" data-field="a" data-fmt="int">—</span> seções, caiu em <span data-draw="v" data-source="gerais" data-where="id=secoes" data-field="b" data-fmt="int">—</span></span></div>
+      <div class="card tile"><span class="muted">Flávio a mais que no 1º turno</span><span class="num" data-draw="v" data-source="gerais" data-where="id=ganho" data-field="b" data-fmt="int">—</span><span class="muted">cresceu em <span data-draw="v" data-source="gerais" data-where="id=secoes" data-field="c" data-fmt="int">—</span> seções, caiu em <span data-draw="v" data-source="gerais" data-where="id=secoes" data-field="d" data-fmt="int">—</span></span></div>
+      <div class="card tile alerta"><span class="muted">Cury + Renan + Caiado + Zema no 1º turno</span><span class="num" data-draw="v" data-source="gerais" data-where="id=quatro" data-field="a" data-fmt="int">—</span><span class="muted">menos que o ganho de Lula: faltariam <span data-draw="v" data-source="gerais" data-where="id=quatro" data-field="c" data-fmt="int">—</span> mesmo com todos para ele</span></div>
+      <div class="card tile"><span class="muted">Tudo o que não era de Lula nem de Flávio</span><span class="num" data-draw="v" data-source="gerais" data-where="id=ganho" data-field="c" data-fmt="int">—</span><span class="muted">Lula ficou com <span data-draw="v" data-source="gerais" data-where="id=ganho" data-field="d" data-fmt="num">—</span>%</span></div>
+    </div>
+    <div class="card alerta">
+      <span class="chip bad">A conta só fecha com uma destas três coisas</span>
+      <p>Os quatro candidatos somaram menos votos do que Lula ganhou. O resto do ganho tem de vir dos brancos e nulos a menos, dos eleitores a mais e da esquerda pequena. Se a maioria dos eleitores de Cury, Caiado e Zema e metade dos de Renan não votaram em Lula, como você supõe, então pelo menos uma destas coisas aconteceu:</p>
+      <ol>
+        <li>Brancos, nulos e eleitores novos foram quase todos para Lula (o simulador abaixo mostra quanto).</li>
+        <li>Houve troca de eleitores: gente que votou em Flávio no 1º turno faltou no 2º, e gente que faltou no 1º votou em Lula no 2º. Comparando seção a seção, pelo menos <b data-draw="v" data-source="gerais" data-where="id=entrada" data-field="a" data-fmt="int">—</b> eleitores entraram onde o comparecimento subiu e <b data-draw="v" data-source="gerais" data-where="id=entrada" data-field="b" data-fmt="int">—</b> saíram onde caiu; a troca real dentro de cada seção é maior e não aparece nos arquivos.</li>
+        <li>Eleitores de Flávio no 1º turno votaram em Lula no 2º, ou os votos registrados nas urnas não correspondem ao que foi digitado.</li>
+      </ol>
+      <p class="muted">O que os arquivos já descartam: a totalização somou exatamente o que as urnas registraram (boletins = oficial, RDV = boletim em todas as seções). O que eles não conseguem separar: uma mudança real de eleitores (itens 1 a 3) de uma urna que grave algo diferente do digitado. Para isso servem pesquisas de 2º turno por eleitor de cada candidato, o teste de integridade das urnas sorteadas e fotos de boletins impressos.</p>
+    </div>
+    <div class="card" id="simulador">
+      <h3>Simulador: quanto cada eleitorado deu a Lula</h3>
+      <p class="muted">Ajuste a % de cada eleitorado do 1º turno que votou em Lula. Os valores iniciais seguem a sua suposição: a maioria de Cury, Caiado e Zema contra Lula, cerca de metade de Renan. O simulador calcula quanto do ganho real de Lula sobra para vir de brancos, nulos e eleitores novos.</p>
+      <div class="sliders">
+        <label for="sim-cury">Augusto Cury <b data-draw="simpct" data-for="sim-cury">—</b></label><input id="sim-cury" class="lx-sim" data-fonte="Augusto Cury (Avante)" type="range" min="0" max="100" step="5" value="30">
+        <label for="sim-renan">Renan Santos <b data-draw="simpct" data-for="sim-renan">—</b></label><input id="sim-renan" class="lx-sim" data-fonte="Renan Santos (Missão)" type="range" min="0" max="100" step="5" value="50">
+        <label for="sim-caiado">Ronaldo Caiado <b data-draw="simpct" data-for="sim-caiado">—</b></label><input id="sim-caiado" class="lx-sim" data-fonte="Ronaldo Caiado (PSD)" type="range" min="0" max="100" step="5" value="30">
+        <label for="sim-zema">Zema <b data-draw="simpct" data-for="sim-zema">—</b></label><input id="sim-zema" class="lx-sim" data-fonte="Zema (Novo)" type="range" min="0" max="100" step="5" value="10">
+        <label for="sim-esq">Esquerda pequena <b data-draw="simpct" data-for="sim-esq">—</b></label><input id="sim-esq" class="lx-sim" data-fonte="Esquerda pequena (UP, PSTU, PCB, PCO)" type="range" min="0" max="100" step="5" value="85">
+        <label for="sim-outros">Outros candidatos <b data-draw="simpct" data-for="sim-outros">—</b></label><input id="sim-outros" class="lx-sim" data-fonte="Outros candidatos" type="range" min="0" max="100" step="5" value="50">
+      </div>
+      <div class="tiles">
+        <div class="tile"><span class="muted">Votos de Lula vindos desses candidatos</span><span class="num" data-draw="sim" data-out="lula" data-source="fontes gerais">—</span></div>
+        <div class="tile"><span class="muted">Falta para chegar ao ganho real</span><span class="num" data-draw="sim" data-out="falta" data-source="fontes gerais">—</span></div>
+        <div class="tile"><span class="muted">Brancos e nulos a menos + eleitores a mais</span><span class="num" data-draw="sim" data-out="disp" data-source="fontes">—</span></div>
+        <div class="tile"><span class="muted">Parcela deles que teria de ir para Lula</span><span class="num" data-draw="sim" data-out="pct" data-source="fontes gerais">—</span></div>
+      </div>
+      <p class="sim-msg" data-msg="cabe" hidden>Com essas porcentagens a conta fecha sem troca de eleitores, mas exige que brancos, nulos e eleitores novos tenham ido em grande parte para Lula.</p>
+      <p class="sim-msg bad" data-msg="nao-cabe" hidden>Com essas porcentagens a conta não fecha: mesmo com todos os brancos, nulos e eleitores novos para Lula, faltariam votos. Eles só podem ter vindo de eleitores de Flávio no 1º turno ou de troca de eleitores entre os turnos.</p>
+      <p class="muted">Se o restante dos eleitores desses candidatos tivesse ido para Flávio, ele teria ganho <b data-draw="sim" data-out="flavio" data-source="fontes">—</b> votos; ganhou de fato <b data-draw="v" data-source="gerais" data-where="id=ganho" data-field="b" data-fmt="int">—</b>.</p>
+      <span data-draw="simmsg" data-source="fontes gerais"></span>
+    </div>
+  </section>
+
+  <section class="sec atencao" id="atencao">
+    <h2>Pontos de atenção</h2>
+    <p>As principais inconsistências e pontos estranhos encontrados nos dados, cada um com o que pode explicá-lo e como verificar. O status diz o quanto cada ponto já foi explicado pelos próprios dados; nenhum deles é, sozinho, prova de fraude ou de ausência dela.</p>
+    <div class="grid">
+      <div class="card alerta">
+        <span class="chip bad">Exige transferência alta</span>
+        <h3>Lula ganhou mais de 10 milhões de votos nas mesmas seções</h3>
+        <p>Lula ganhou <b data-draw="v" data-source="pontos" data-where="id=ganho" data-field="a" data-fmt="int">—</b> votos e Flávio <b data-draw="v" data-source="pontos" data-where="id=ganho" data-field="b" data-fmt="int">—</b>. Tudo o que estava disponível somava <b data-draw="v" data-source="pontos" data-where="id=ganho" data-field="c" data-fmt="int">—</b>: <span data-draw="v" data-source="pontos" data-where="id=ganho" data-field="e" data-fmt="int">—</span> votos de outros candidatos no 1º turno, <span data-draw="v" data-source="pontos" data-where="id=ganho" data-field="f" data-fmt="int">—</span> brancos e nulos a menos e os eleitores a mais. Lula ficou com <b data-draw="v" data-source="pontos" data-where="id=ganho" data-field="d" data-fmt="num">—</b>% desse total.</p>
+        <p class="muted">Verificar: tabela "De onde vieram os votos" abaixo, que estima quanto de cada eleitorado foi para cada lado.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">A verificar</span>
+        <h3>Eleitores de candidatos de direita indo para Lula</h3>
+        <p>Pela estimativa, <b data-draw="v" data-source="pontos" data-where="id=direita" data-field="a" data-fmt="num">—</b>% dos eleitores de Caiado, <b data-draw="v" data-source="pontos" data-where="id=direita" data-field="b" data-fmt="num">—</b>% dos de Renan Santos e <b data-draw="v" data-source="pontos" data-where="id=direita" data-field="c" data-fmt="num">—</b>% dos de Augusto Cury votaram em Lula, cerca de <b data-draw="v" data-source="pontos" data-where="id=direita" data-field="e" data-fmt="int">—</b> votos. Os de Zema foram quase todos para Flávio.</p>
+        <p class="muted">Explicação possível: é uma estimativa por seção (regressão ecológica), não uma contagem de pessoas. Cury tem eleitorado religioso e de centro. Verificar com pesquisas de 2º turno por eleitor de cada candidato.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">A verificar</span>
+        <h3>Brancos e nulos do 1º turno estimados quase todos para Lula</h3>
+        <p>Havia <b data-draw="v" data-source="pontos" data-where="id=brancos" data-field="a" data-fmt="int">—</b> brancos e nulos no 1º turno. A estimativa coloca <b data-draw="v" data-source="pontos" data-where="id=brancos" data-field="b" data-fmt="int">—</b> deles em Lula e <b data-draw="v" data-source="pontos" data-where="id=brancos" data-field="c" data-fmt="int">—</b> em Flávio, mas o total de brancos e nulos caiu só <b data-draw="v" data-source="pontos" data-where="id=brancos" data-field="d" data-fmt="int">—</b>.</p>
+        <p class="muted">Explicação possível: seções com muitos nulos ficam em regiões onde Lula é forte (efeito de região, não de pessoa), e parte de quem votou em candidato no 1º turno anulou no 2º. Verificar com o RDV, que registra cada voto na ordem.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">A verificar</span>
+        <h3>Seções em que Lula ganhou mais do que havia disponível</h3>
+        <p>Em <b data-draw="v" data-source="pontos" data-where="id=excesso" data-field="a" data-fmt="int">—</b> de <span data-draw="v" data-source="pontos" data-where="id=excesso" data-field="d" data-fmt="int">—</span> seções, o ganho de Lula passou da soma de votos de outros candidatos, queda de brancos e nulos e eleitores a mais. O excesso soma <b data-draw="v" data-source="pontos" data-where="id=excesso" data-field="b" data-fmt="int">—</b> votos, que só se explicam por eleitor de Flávio no 1º turno votando em Lula no 2º, ou por eleitores diferentes em cada turno. Em <b data-draw="v" data-source="pontos" data-where="id=excesso" data-field="c" data-fmt="int">—</b> seções o excesso é grande (tabela abaixo).</p>
+        <p class="muted">Recontadas pelo RDV: os votos registrados um a um batem com o boletim (quadro "Recontagem pelo RDV"). Seis delas são da zona 37 de Rafael Godeiro (RN), onde Flávio caiu em todas as seções com os mesmos eleitores aptos: uma virada local. Falta foto do boletim impresso.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">A verificar</span>
+        <h3>A seção mais fora do esperado do país</h3>
+        <p>AM, município 2097, zona 18, seção 37: Flávio caiu de <b data-draw="v" data-source="pontos" data-where="id=secao" data-field="a" data-fmt="int">—</b> para <b data-draw="v" data-source="pontos" data-where="id=secao" data-field="b" data-fmt="int">—</b> votos, Lula subiu de <b data-draw="v" data-source="pontos" data-where="id=secao" data-field="c" data-fmt="int">—</b> para <b data-draw="v" data-source="pontos" data-where="id=secao" data-field="d" data-fmt="int">—</b>, e o comparecimento caiu de <span data-draw="v" data-source="pontos" data-where="id=secao" data-field="e" data-fmt="int">—</span> para <span data-draw="v" data-source="pontos" data-where="id=secao" data-field="f" data-fmt="int">—</span>.</p>
+        <p class="muted">Recontada pelo RDV: os votos registrados um a um dão o mesmo resultado do boletim. Uma foto do boletim impresso fecharia a questão.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">Parcialmente explicado</span>
+        <h3>Muito mais seções fora do esperado do que o acaso daria</h3>
+        <p><b data-draw="v" data-source="pontos" data-where="id=fora" data-field="a" data-fmt="int">—</b> seções ficaram 4 desvios ou mais fora do previsto; o acaso daria cerca de <b data-draw="v" data-source="pontos" data-where="id=fora" data-field="b" data-fmt="int">—</b>. Em <span data-draw="v" data-source="pontos" data-where="id=fora" data-field="c" data-fmt="int">—</span> delas Flávio ficou abaixo, <span data-draw="v" data-source="pontos" data-where="id=fora" data-field="d" data-fmt="int">—</span> só no Acre e em Roraima.</p>
+        <p class="muted">Explicação encontrada: queda forte de comparecimento no interior do AC e de RR, com os mesmos eleitores aptos. Ainda falta saber por que essas pessoas não votaram.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip warn">Pequeno</span>
+        <h3>Inversões de Flávio para Lula acima do acaso</h3>
+        <p>Flávio venceu no 1º turno e Lula no 2º em <b data-draw="v" data-source="pontos" data-where="id=inversao" data-field="a" data-fmt="int">—</b> seções. A simulação ao acaso dá em média <b data-draw="v" data-source="pontos" data-where="id=inversao" data-field="b" data-fmt="int">—</b> (no máximo <span data-draw="v" data-source="pontos" data-where="id=inversao" data-field="d" data-fmt="int">—</span>): são <b data-draw="v" data-source="pontos" data-where="id=inversao" data-field="c" data-fmt="int">—</b> a mais.</p>
+        <p class="muted">Explicação possível: estados em que Lula cresceu mais do que a média nacional. Verificar por UF na tabela da seção 1.</p>
+      </div>
+      <div class="card alerta">
+        <span class="chip ok">Explicado</span>
+        <h3>A queda de Flávio às 21:00</h3>
+        <p>Na janela das 21:00 Flávio ficou <b data-draw="v" data-source="pontos" data-where="id=janela" data-field="a" data-fmt="signed">—</b> ponto abaixo do esperado, mais que o pior caso do acaso no país (<span data-draw="v" data-source="pontos" data-where="id=janela" data-field="b" data-fmt="signed">—</span>). O Rio de Janeiro era <b data-draw="v" data-source="pontos" data-where="id=janela" data-field="c" data-fmt="num">—</b>% dos votos dessa janela, com Flávio <b data-draw="v" data-source="pontos" data-where="id=janela" data-field="d" data-fmt="signed">—</b> ponto abaixo do esperado ali.</p>
+        <p class="muted">Ponto aberto: no RJ inteiro Flávio ficou <span data-draw="v" data-source="pontos" data-where="id=rj" data-field="a" data-fmt="signed">—</span> ponto abaixo do esperado, no estado dele. Não é algo só daquele horário.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>De onde vieram os votos (estimativa por seção)</h3>
+        <p class="muted">Fração de cada eleitorado do 1º turno que acompanhou Lula ou Flávio no 2º, estimada pela relação entre os votos de cada seção nos dois turnos. É uma média entre seções, não uma contagem de pessoas.</p>
+        <div class="tw">
+          <table data-source="transferencia" data-row-key="grupo">
+            <thead><tr><th data-field="grupo">Eleitorado do 1º turno</th><th data-field="votos_1t">Votos 1º</th><th data-field="pct_lula">% Lula</th><th data-field="pct_flavio">% Flávio</th><th data-field="votos_lula_est">Votos Lula (est.)</th><th data-field="votos_flavio_est">Votos Flávio (est.)</th></tr></thead>
+            <tbody data-draw="tab-transf" data-source="transferencia"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Recontagem pelo RDV</h3>
+        <p class="muted">O RDV (registro digital do voto) guarda cada voto digitado na urna, embaralhado. Recontamos Presidente nas seções mais suspeitas e comparamos com o boletim da mesma urna: <b data-draw="v" data-source="recontagem_resumo" data-field="iguais" data-fmt="int">—</b> de <b data-draw="v" data-source="recontagem_resumo" data-field="total" data-fmt="int">—</b> iguais. Os dois arquivos são gerados pela mesma urna: isso mostra que o boletim é a soma dos votos registrados, não que o eleitor digitou o que queria.</p>
+        <div class="tw">
+          <table data-source="recontagem" data-row-key="secao">
+            <thead><tr><th data-field="secao">UF-mun-zona-seção</th><th data-field="situacao">Resultado</th><th data-field="rdv_lula">Lula RDV</th><th data-field="bu_lula">Lula BU</th><th data-field="rdv_flavio">Flávio RDV</th><th data-field="bu_flavio">Flávio BU</th><th data-field="rdv_brancos">Brancos RDV</th><th data-field="bu_brancos">Brancos BU</th><th data-field="rdv_nulos">Nulos RDV</th><th data-field="bu_nulos">Nulos BU</th></tr></thead>
+            <tbody data-draw="tab-recontagem" data-source="recontagem"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Seções em que Lula ganhou bem mais do que havia disponível</h3>
+        <p class="muted">Sobra = votos de outros candidatos + queda de brancos e nulos + eleitores a mais. Excesso = ganho de Lula acima da sobra.</p>
+        <div class="tw">
+          <table data-source="acima_sobra" data-row-key="secao">
+            <thead><tr><th data-field="secao">UF-mun-zona-seção</th><th data-field="comp_1t">Comp. 1º</th><th data-field="comp_2t">Comp. 2º</th><th data-field="lula_1t">Lula 1º</th><th data-field="lula_2t">Lula 2º</th><th data-field="flavio_1t">Flávio 1º</th><th data-field="flavio_2t">Flávio 2º</th><th data-field="sobra">Sobra</th><th data-field="ganho_lula">Ganho Lula</th><th data-field="excesso">Excesso</th></tr></thead>
+            <tbody data-draw="tab-acima" data-source="acima_sobra"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="totais">
+    <h2>1. Diferença entre os candidatos</h2>
+    <div class="tiles">
+      <div class="card tile"><span class="muted">Lula, 2º turno</span><span class="num" data-draw="v" data-source="totais" data-field="oficial_2t" data-where="item=Lula" data-fmt="int">—</span><span class="muted">no 1º turno, nas mesmas seções: <span data-draw="v" data-source="totais" data-field="primeiro_turno" data-where="item=Lula" data-fmt="int">—</span></span></div>
+      <div class="card tile"><span class="muted">Flávio, 2º turno</span><span class="num" data-draw="v" data-source="totais" data-field="oficial_2t" data-where="item=Flávio" data-fmt="int">—</span><span class="muted">no 1º turno, nas mesmas seções: <span data-draw="v" data-source="totais" data-field="primeiro_turno" data-where="item=Flávio" data-fmt="int">—</span></span></div>
+      <div class="card tile"><span class="muted">Margem de Lula</span><span class="num" data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Margem de Lula" data-fmt="int">—</span><span class="muted">votos</span></div>
+      <div class="card tile"><span class="muted">Municípios em que os boletins somam diferente do oficial</span><span class="num" data-draw="v" data-source="municipios" data-field="divergentes" data-fmt="int">—</span><span class="muted">de <span data-draw="v" data-source="municipios" data-field="comparados" data-fmt="int">—</span> comparados</span></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Boletins de urna x resultado oficial</h3>
+        <p class="muted">Se a totalização tivesse trocado votos, a soma dos boletins emitidos pelas urnas não daria o total divulgado.</p>
+        <div class="tw">
+          <table data-source="totais" data-row-key="item">
+            <thead><tr><th data-field="item">Item</th><th data-field="oficial_2t">Oficial TSE</th><th data-field="soma_bus_2t">Soma dos boletins</th><th data-field="diferenca">Diferença</th><th data-field="primeiro_turno">1º turno</th></tr></thead>
+            <tbody data-draw="tab-totais" data-source="totais"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Por UF: votos válidos e desvio de Flávio</h3>
+        <p class="muted">Desvio = votos reais de Flávio menos os esperados pelo 1º turno de cada seção, em pontos percentuais dos votos de Lula + Flávio. Negativo: Flávio teve menos do que o 1º turno previa.</p>
+        <div class="tw">
+          <table data-source="uf" data-row-key="uf">
+            <thead><tr><th data-field="uf">UF</th><th data-field="lula_1t_pct">Lula 1º</th><th data-field="flavio_1t_pct">Flávio 1º</th><th data-field="lula_2t_pct">Lula 2º</th><th data-field="flavio_2t_pct">Flávio 2º</th><th data-field="desvio_flavio_pp">Desvio (p.p.)</th></tr></thead>
+            <tbody data-draw="tab-uf" data-source="uf"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="urnas">
+    <h2>2. A mesma urna no 1º e no 2º turno</h2>
+    <p>Para cada seção, um modelo prevê os votos do 2º turno a partir do 1º turno dela mesma (votos de Lula, Flávio, outros candidatos, brancos e nulos, e a variação do comparecimento). A simulação sorteia 200 vezes o 2º turno de todas as seções com o ruído do tamanho observado e conta quantas inversões, quedas e zeragens apareceriam só por acaso.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Ocorrências reais x simulação ao acaso</h3>
+        <p class="muted">Faixa = 95% das 200 simulações. Houve menos quedas e zeragens de Flávio do que o acaso produziria; casos muito fora do esperado são mais numerosos que no acaso e se concentram em poucas regiões (seção 3 e tabela ao lado).</p>
+        <div class="tw">
+          <table data-source="marcas" data-row-key="marca">
+            <thead><tr><th data-field="marca">Ocorrência</th><th data-field="real">Real</th><th data-field="simulado_media">Acaso (média)</th><th data-field="simulado_min">Acaso mín.</th><th data-field="simulado_max">Acaso máx.</th></tr></thead>
+            <tbody data-draw="tab-marcas" data-source="marcas"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>As 40 seções que mais fugiram do esperado contra Flávio</h3>
+        <p class="muted">z = quantos desvios-padrão a seção ficou abaixo do previsto. Muitas tiveram queda forte de comparecimento (AC, RR e interior do AM): os eleitores aptos não mudaram, menos gente votou.</p>
+        <div class="tw">
+          <table data-source="destaques" data-row-key="secao">
+            <thead><tr><th data-field="secao">UF-mun-zona-seção</th><th data-field="comp_1t">Comp. 1º</th><th data-field="comp_2t">Comp. 2º</th><th data-field="lula_1t">Lula 1º</th><th data-field="lula_2t">Lula 2º</th><th data-field="flavio_1t">Flávio 1º</th><th data-field="flavio_2t">Flávio 2º</th><th data-field="flavio_esperado">Flávio esperado</th><th data-field="z">z</th><th data-field="marcas">Marcas</th></tr></thead>
+            <tbody data-draw="tab-destaques" data-source="destaques"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="comparecimento">
+    <h2>3. Abstenções do 1º turno e votos de Lula</h2>
+    <p>O voto é secreto, então não dá para saber quem votou em quem. O que dá para medir é a associação: nas seções em que o comparecimento subiu mais, quanto cada candidato ganhou.</p>
+    <div class="tiles">
+      <div class="card tile"><span class="muted">Eleitores a mais no 2º turno</span><span class="num" data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Variação do comparecimento" data-fmt="int">—</span><span class="muted">abstenções: <span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Abstenções 1º turno" data-fmt="int">—</span> → <span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Abstenções 2º turno" data-fmt="int">—</span></span></div>
+      <div class="card tile"><span class="muted">Para cada eleitor a mais na seção</span><span class="num"><span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Lula por eleitor a mais" data-fmt="dec">—</span> Lula</span><span class="muted"><span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Flávio por eleitor a mais" data-fmt="dec">—</span> para Flávio</span></div>
+      <div class="card tile"><span class="muted">Votos ligados ao comparecimento</span><span class="num" data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Votos de Lula ligados ao comparecimento" data-fmt="int">—</span><span class="muted">Lula; Flávio: <span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Votos de Flávio ligados ao comparecimento" data-fmt="int">—</span></span></div>
+      <div class="card tile"><span class="muted">Margem de Lula sem esse efeito</span><span class="num" data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Margem sem o efeito do comparecimento" data-fmt="int">—</span><span class="muted">com o efeito: <span data-draw="v" data-source="comparecimento" data-field="valor" data-where="medida=Margem de Lula" data-fmt="int">—</span></span></div>
+    </div>
+    <div class="card">
+      <h3>Ganho médio por seção, conforme o comparecimento variou</h3>
+      <p class="muted">Seções divididas em 10 grupos iguais, da maior queda (1) à maior alta (10) de comparecimento. Lula ganha em todos os grupos, inclusive onde menos gente votou: a maior parte do ganho dele veio de quem votou em outros candidatos no 1º turno.</p>
+      <div class="legend"><span><span class="sw s0"></span>Lula</span><span><span class="sw s1"></span>Flávio</span></div>
+      <div class="chart" data-draw="decis" data-source="decis"></div>
+    </div>
+  </section>
+
+  <section class="sec" id="curva">
+    <h2>4. A curva da apuração, na ordem em que os boletins chegaram</h2>
+    <div class="card" id="totalizacao">
+      <h3>Totalização minuto a minuto: Lula x Flávio</h3>
+      <p class="muted">Soma acumulada dos boletins de urna de Presidente, minuto a minuto, pelo horário em que o TSE registrou o recebimento de cada um. Passe o mouse para ver os votos, a % e as seções de cada minuto.</p>
+      <div class="ctrls">
+        <div class="seg" role="group" aria-label="Escala">
+          <button type="button" class="lx-modo" data-modo="pct" aria-pressed="true">% dos votos válidos</button>
+          <button type="button" class="lx-modo" data-modo="votos" aria-pressed="false">Votos acumulados</button>
+        </div>
+        <div class="seg" role="group" aria-label="Período">
+          <button type="button" class="lx-periodo" data-periodo="noite" aria-pressed="true">Noite da eleição (até 22:30)</button>
+          <button type="button" class="lx-periodo" data-periodo="tudo" aria-pressed="false">Tudo, até o último boletim</button>
+        </div>
+      </div>
+      <div class="legend"><span><span class="sw s0"></span>Lula</span><span><span class="sw s1"></span>Flávio</span><span><span class="sw band"></span>Seções recebidas no minuto</span></div>
+      <div class="chart tall" data-draw="totalizacao" data-source="totalizacao"></div>
+    </div>
+    <p>A linha cheia é a % de Flávio acumulada, na ordem de recebimento de cada boletim (o horário que o TSE registra para cada seção). A tracejada é o que se esperaria para aquelas mesmas seções pelo 1º turno delas. Se votos de Flávio tivessem sido derrubados em certos momentos, a cheia descolaria da tracejada nesses momentos.</p>
+    <div class="card">
+      <h3>% de Flávio acumulada: real x esperada</h3>
+      <p class="muted">Eixo horizontal: % das seções já recebidas.</p>
+      <div class="legend"><span><span class="sw s1"></span>Real</span><span><span class="sw muted"></span>Esperada pelo 1º turno das mesmas seções</span></div>
+      <div class="chart" data-draw="curva" data-source="curva"></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Janelas de 10 minutos: real menos esperado</h3>
+        <p class="muted">Barra = diferença em pontos percentuais dos votos de Lula + Flávio recebidos na janela. Faixa cinza = o que o acaso produziria se as seções chegassem em ordem aleatória. As janelas fora da faixa são explicadas pela UF que mais chegou nelas (tabela ao lado).</p>
+        <div class="legend"><span><span class="sw s1"></span>Diferença real</span><span><span class="sw band"></span>Faixa do acaso</span></div>
+        <div class="chart short" data-draw="janelas" data-source="janelas"></div>
+      </div>
+      <div class="card">
+        <h3>Quem chegou em cada janela</h3>
+        <p class="muted">As 5 UFs com mais votos em cada janela, o peso delas e o desvio de Flávio nelas. A queda das 21:00 é o Rio de Janeiro, onde Flávio ficou abaixo do esperado o dia todo.</p>
+        <div class="tw">
+          <table data-source="janela_uf" data-row-key="janela,uf">
+            <thead><tr><th data-field="janela">Janela</th><th data-field="uf">UF</th><th data-field="peso_pct">Peso (%)</th><th data-field="desvio_uf_pp">Desvio da UF (p.p.)</th><th data-field="contribuicao_pp">Contribuição (p.p.)</th></tr></thead>
+            <tbody data-draw="tab-janela-uf" data-source="janela_uf"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Teste de permutação: a pior janela</h3>
+        <p class="muted">A pior janela real comparada com a pior janela em 200 ordens sorteadas. Sorteando no país inteiro, ela é um pouco pior que o acaso; sorteando dentro de cada UF (mantendo quem chega quando), fica dentro do acaso.</p>
+        <div class="tw">
+          <table data-source="permutacao" data-row-key="teste">
+            <thead><tr><th data-field="teste">Sorteio</th><th data-field="pior_janela_real">Real (p.p.)</th><th data-field="acaso_media">Acaso média</th><th data-field="acaso_min">Acaso mín.</th><th data-field="acaso_max">Acaso máx.</th></tr></thead>
+            <tbody data-draw="tab-perm" data-source="permutacao"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Simulação de fraude: o que apareceria</h3>
+        <p class="muted">Tiramos uma % dos votos de Flávio e demos a Lula nas seções recebidas entre 20:30 e 20:59, e medimos a pior janela. Uma troca de 1% já passaria do pior desvio real, e qualquer troca faria a soma dos boletins diferir do oficial pelo número de votos movidos.</p>
+        <div class="tw">
+          <table data-source="injecao" data-row-key="troca_pct">
+            <thead><tr><th data-field="troca_pct">Troca (% dos votos de Flávio)</th><th data-field="votos_movidos">Votos movidos</th><th data-field="pior_janela_pp">Pior janela (p.p.)</th></tr></thead>
+            <tbody data-draw="tab-injecao" data-source="injecao"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="hipoteses">
+    <h2>5. Hipóteses levantadas</h2>
+    <p>Quatro suspeitas que circulam sobre o 2º turno, cada uma testada com os boletins, os RDVs e o 1º turno das mesmas seções.</p>
+
+    <div class="card alerta">
+      <span class="chip ok">Não encontrado nos dados</span>
+      <h3>Abstenções, brancos e nulos usados como votos de Lula, e votos de Flávio virados para Lula</h3>
+      <p><b>Recontagem completa pelo RDV.</b> Recontamos voto a voto as <b data-draw="v" data-source="rdv_brasil" data-field="secoes" data-fmt="int">—</b> seções do 2º turno que têm RDV publicado: <b data-draw="v" data-source="rdv_brasil" data-field="iguais" data-fmt="int">—</b> iguais ao boletim, <b data-draw="v" data-source="rdv_brasil" data-field="diferentes" data-fmt="int">—</b> diferentes. Os RDVs somam <span data-draw="v" data-source="rdv_brasil" data-field="rdv_lula" data-fmt="int">—</span> votos para Lula e <span data-draw="v" data-source="rdv_brasil" data-field="rdv_flavio" data-fmt="int">—</span> para Flávio; a diferença para o total oficial é a única seção sem RDV publicado pelo TSE (CE, município 14176, zona 21, seção 136).</p>
+      <p><b>Eleitores sem biometria.</b> Voto inserido no lugar de quem se absteve apareceria como eleitor liberado sem digital. Nas seções com mais eleitores sem biometria (comparadas com outras da mesma UF), Lula não fica acima do esperado: a diferença fica perto de zero em todos os grupos (tabela abaixo).</p>
+      <p><b>Comparecimento.</b> Seções com 98% ou mais de comparecimento: <b data-draw="v" data-source="hipoteses" data-where="id=comp98" data-field="a" data-fmt="int">—</b> no 1º turno e <b data-draw="v" data-source="hipoteses" data-where="id=comp98" data-field="b" data-fmt="int">—</b> no 2º. Comparecimento médio por seção: <span data-draw="v" data-source="hipoteses" data-where="id=comp98" data-field="e" data-fmt="num">—</span>% e <span data-draw="v" data-source="hipoteses" data-where="id=comp98" data-field="f" data-fmt="num">—</span>%. Em <b data-draw="v" data-source="hipoteses" data-where="id=salto" data-field="a" data-fmt="int">—</b> seções o comparecimento saltou 15 pontos ou mais; ali Lula ficou em média <b data-draw="v" data-source="hipoteses" data-where="id=salto" data-field="b" data-fmt="num">—</b> pontos acima do esperado, <span data-draw="v" data-source="hipoteses" data-where="id=salto" data-field="c" data-fmt="int">—</span> votos no total (tabela abaixo).</p>
+      <p class="muted">O que isso não alcança: RDV e boletim são gravados pela mesma urna. Uma urna com programa adulterado gravaria os dois iguais; isso é coberto pelo teste de integridade feito em urnas sorteadas no dia da eleição e por fotos de boletins impressos, não por estes arquivos.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Eleitores sem biometria x votos acima do esperado</h3>
+        <p class="muted">Seções em 10 grupos, da que tem menos à que tem mais eleitores liberados sem digital, em relação à média da própria UF. Colunas em pontos percentuais do comparecimento.</p>
+        <div class="tw">
+          <table data-source="biometria" data-row-key="decil">
+            <thead><tr><th data-field="decil">Grupo</th><th data-field="sem_biometria_pct">Sem biometria (%)</th><th data-field="lula_acima_esperado_pp">Lula acima do esperado</th><th data-field="flavio_acima_esperado_pp">Flávio acima do esperado</th><th data-field="comparecimento_a_mais_pp">Comparecimento a mais</th></tr></thead>
+            <tbody data-draw="tab-bio" data-source="biometria"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Seções com salto de comparecimento de 15 pontos ou mais</h3>
+        <p class="muted">Ordenadas pelos votos de Lula acima do esperado. Todas estão na recontagem pelo RDV, iguais ao boletim. Vale procurar o motivo local (transporte de eleitores, aldeia, zona rural).</p>
+        <div class="tw">
+          <table data-source="salto_comparecimento" data-row-key="secao">
+            <thead><tr><th data-field="secao">UF-mun-zona-seção</th><th data-field="aptos">Aptos</th><th data-field="comp_1t">Comp. 1º</th><th data-field="comp_2t">Comp. 2º</th><th data-field="lula_1t">Lula 1º</th><th data-field="lula_2t">Lula 2º</th><th data-field="lula_esperado">Lula esperado</th><th data-field="flavio_1t">Flávio 1º</th><th data-field="flavio_2t">Flávio 2º</th></tr></thead>
+            <tbody data-draw="tab-salto" data-source="salto_comparecimento"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card alerta">
+        <span class="chip warn">Inédito no Brasil, comum fora</span>
+        <h3>"Nunca quem ganha o 1º turno perde o 2º"</h3>
+        <p>No Brasil, nas 7 eleições presidenciais com 2º turno desde 1989, o líder do 1º turno sempre venceu. 2026 é a primeira virada. Mas também foi a menor vantagem de um líder de 1º turno no país: <b data-draw="v" data-source="historico" data-where="pais=Brasil&amp;ano=2026" data-field="vantagem_pp" data-fmt="num">—</b> ponto, contra no mínimo <b data-draw="v" data-source="hist_min" data-field="vantagem_min" data-fmt="num">—</b> antes. Em outros países, viradas assim são frequentes (tabela).</p>
+        <p class="muted">Os resultados históricos foram digitados a partir de referência geral, não baixados: confira nas fontes oficiais antes de citar.</p>
+      </div>
+      <div class="card">
+        <span class="chip ok">A regra se manteve</span>
+        <h3>"Quem ganha em Minas ganha no Brasil"</h3>
+        <p>Em Minas Gerais, Flávio liderou o 1º turno com <b data-draw="v" data-source="uf" data-where="uf=MG" data-field="flavio_1t_pct" data-fmt="num">—</b>% contra <b data-draw="v" data-source="uf" data-where="uf=MG" data-field="lula_1t_pct" data-fmt="num">—</b>% de Lula, como no país. No 2º turno Lula venceu em Minas com <b data-draw="v" data-source="uf" data-where="uf=MG" data-field="lula_2t_pct" data-fmt="num">—</b>% contra <b data-draw="v" data-source="uf" data-where="uf=MG" data-field="flavio_2t_pct" data-fmt="num">—</b>%, também como no país. O desvio de Flávio em Minas contra o esperado pelo 1º turno é <b data-draw="v" data-source="uf" data-where="uf=MG" data-field="desvio_flavio_pp" data-fmt="signed">—</b> ponto: Minas mudou exatamente como o 1º turno de cada seção previa.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Líder do 1º turno x vencedor do 2º</h3>
+      <div class="tw">
+        <table data-source="historico" data-row-key="pais,ano">
+          <thead><tr><th data-field="pais">País</th><th data-field="ano">Ano</th><th data-field="lider_1t">Líder 1º turno</th><th data-field="pct_lider_1t">%</th><th data-field="segundo_1t">2º colocado</th><th data-field="pct_segundo_1t">%</th><th data-field="vantagem_pp">Vantagem (p.p.)</th><th data-field="vencedor_2t">Vencedor 2º turno</th><th data-field="pct_vencedor_2t">%</th><th data-field="virou">Virou?</th></tr></thead>
+          <tbody data-draw="tab-hist" data-source="historico"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card alerta">
+      <span class="chip ok">Explicado pela ordem de chegada</span>
+      <h3>"A % de Flávio sobe em ondas pequenas e cai em quedas grandes e retas"</h3>
+      <p>Em <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="a" data-fmt="int">—</b> minutos de apuração (a partir de 1% das seções), a % de Flávio caiu em <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="b" data-fmt="int">—</b> e subiu em <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="c" data-fmt="int">—</b>: o desenho existe. Mas cada queda é exatamente a que o 1º turno das urnas que chegaram naquele minuto previa. A correlação entre a variação real e a esperada é <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="d" data-fmt="num">—</b> (1 seria idêntico). A maior queda real em um minuto foi <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="e" data-fmt="signed">—</b> ponto; a esperada para aquelas urnas era <b data-draw="v" data-source="hipoteses" data-where="id=curva" data-field="f" data-fmt="signed">—</b>.</p>
+      <p class="muted">Por que o desenho: urnas de capitais e do Sul e Centro-Oeste chegam cedo e em lotes menores; depois entram lotes grandes do Nordeste e do Rio, onde Lula é mais forte, e a % de Flávio cai de uma vez. Votos acumulados nunca diminuem, só a porcentagem. As retas aparecem quando o gráfico liga atualizações espaçadas do site com uma linha. Uma troca de votos na totalização faria a variação real descolar da esperada; cada ponto abaixo estaria longe da diagonal.</p>
+      <div class="legend"><span><span class="sw s1"></span>Cada minuto da apuração</span><span><span class="sw band"></span>Diagonal: real igual ao esperado</span></div>
+      <div class="chart" data-draw="delta" data-source="curva_delta"></div>
+    </div>
+  </section>
+
+  <section class="sec" id="inversao">
+    <div class="card" id="mapas">
+      <h3>Mapa: quem venceu em cada UF</h3>
+      <p class="muted">Mapa oficial das UFs do IBGE; o exterior aparece no quadrado do canto. A cor mostra quem vence e a intensidade, por quanto. Passe o mouse para ver os votos.</p>
+      <div class="legend"><span><span class="sw s0"></span>Lula vence</span><span><span class="sw s1"></span>Flávio vence</span></div>
+      <div class="mapas">
+        <div class="mapa"><h3>Resultado do 2º turno</h3><p class="muted"><span data-draw="mapres" data-cen="publicado" data-source="mapa_cenarios">—</span></p><div class="chart map" data-draw="mapa" data-cen="publicado" data-source="mapa_cenarios"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="viradas">
+    <h2>6. Onde houve virada nas urnas</h2>
+    <p>Virada = seção em que um candidato liderou no 1º turno e o outro venceu no 2º. Viradas de Flávio para Lula: <b data-draw="v" data-source="viradas_total" data-field="fl" data-fmt="int">—</b> seções; de Lula para Flávio: <b data-draw="v" data-source="viradas_total" data-field="lf" data-fmt="int">—</b>, de <span data-draw="v" data-source="viradas_total" data-field="secoes" data-fmt="int">—</span> comparáveis.</p>
+    <p>Nas seções que viraram para Lula, Lula foi de <b data-draw="v" data-source="viradas_total" data-field="fl_L1" data-fmt="int">—</b> para <b data-draw="v" data-source="viradas_total" data-field="fl_L2" data-fmt="int">—</b> votos e Flávio de <b data-draw="v" data-source="viradas_total" data-field="fl_F1" data-fmt="int">—</b> para <b data-draw="v" data-source="viradas_total" data-field="fl_F2" data-fmt="int">—</b>. Flávio também cresceu nessas seções; elas viraram porque eram apertadas no 1º turno e Lula cresceu mais. Nas que viraram para Flávio, Flávio foi de <span data-draw="v" data-source="viradas_total" data-field="lf_F1" data-fmt="int">—</span> para <span data-draw="v" data-source="viradas_total" data-field="lf_F2" data-fmt="int">—</span> e Lula de <span data-draw="v" data-source="viradas_total" data-field="lf_L1" data-fmt="int">—</span> para <span data-draw="v" data-source="viradas_total" data-field="lf_L2" data-fmt="int">—</span>.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Mapa: seções e votos que viraram de Flávio para Lula</h3>
+        <p class="muted">Quanto mais escuro, maior a parcela de seções da UF em que Flávio liderou no 1º turno e Lula venceu no 2º. Passe o mouse para ver os votos de Lula e Flávio nessas seções nos dois turnos.</p>
+        <div class="chart map" data-draw="mapa-viradas" data-source="viradas_uf"></div>
+      </div>
+      <div class="card">
+        <h3>Viradas por UF</h3>
+        <p class="muted">% das seções de cada UF que viraram, nos dois sentidos.</p>
+        <div class="legend"><span><span class="sw s0"></span>Flávio → Lula</span><span><span class="sw s1"></span>Lula → Flávio</span></div>
+        <div class="chart tall" data-draw="barras-viradas" data-source="viradas_uf"></div>
+      </div>
+    </div>
+    <h2>Minas Gerais, município a município</h2>
+    <p>Em Minas, <b data-draw="v" data-source="mg_resumo" data-where="situacao=Virou para Lula" data-field="municipios" data-fmt="int">—</b> municípios viraram de Flávio para Lula, <b data-draw="v" data-source="mg_resumo" data-where="situacao=Virou para Flávio" data-field="municipios" data-fmt="int">—</b> viraram para Flávio, <b data-draw="v" data-source="mg_resumo" data-where="situacao=Lula nos dois" data-field="municipios" data-fmt="int">—</b> deram Lula nos dois turnos e <b data-draw="v" data-source="mg_resumo" data-where="situacao=Flávio nos dois" data-field="municipios" data-fmt="int">—</b> deram Flávio nos dois. No total, <b data-draw="v" data-source="viradas_uf" data-where="uf=MG" data-field="virada_flavio_lula" data-fmt="int">—</b> seções mineiras viraram para Lula e <b data-draw="v" data-source="viradas_uf" data-where="uf=MG" data-field="virada_lula_flavio" data-fmt="int">—</b> para Flávio.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Mapa de Minas: resultado de cada município nos dois turnos</h3>
+        <p class="muted">Malha oficial dos municípios do IBGE. Passe o mouse para ver os votos.</p>
+        <div class="legend"><span><span class="sw" style="background:#7A0E1C"></span>Lula nos dois</span><span><span class="sw" style="background:#F08A96"></span>Virou para Lula</span><span><span class="sw" style="background:#0E3A85"></span>Flávio nos dois</span><span><span class="sw" style="background:#8DB3F0"></span>Virou para Flávio</span></div>
+        <div class="chart map" data-draw="mapa-mg" data-source="viradas_mg"></div>
+      </div>
+      <div class="card">
+        <h3>Municípios mineiros em cada situação</h3>
+        <p class="muted">Número de municípios e de seções em cada situação.</p>
+        <div class="chart short" data-draw="barras-mg" data-source="mg_resumo"></div>
+        <h3>Municípios que viraram para Lula, por tamanho</h3>
+        <div class="tw">
+          <table data-source="mg_viraram" data-row-key="municipio">
+            <thead><tr><th data-field="municipio">Município</th><th data-field="flavio_1t">Flávio 1º</th><th data-field="lula_1t">Lula 1º</th><th data-field="flavio_2t">Flávio 2º</th><th data-field="lula_2t">Lula 2º</th><th data-field="secoes">Seções</th></tr></thead>
+            <tbody data-draw="tab-mg" data-source="mg_viraram"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="limites">
+    <h2>O que esta análise não cobre</h2>
+    <ol>
+      <li>Ela compara o total oficial com os arquivos de boletim publicados pelo TSE. Não confere se o boletim impresso e afixado na seção é igual ao arquivo; para isso servem fotos de boletins impressos.</li>
+      <li>A curva usa o horário de recebimento de cada boletim registrado pelo TSE, não a tela que o site mostrou ao vivo. Como o total final bate com os boletins, uma troca temporária só na tela teria de se desfazer sozinha depois.</li>
+      <li>O modelo do esperado é nacional. Estados com dinâmica própria (RR, AC, RJ abaixo; GO, PR, SC acima) aparecem como desvio sem que isso indique fraude.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+  dash.calc('recontagem_resumo', {
+    inputs: ['recontagem'],
+    title: 'Resumo da recontagem',
+    description: 'Seções recontadas pelo RDV e quantas deram o mesmo resultado do boletim.',
+    fn: (recontagem) => [{total: recontagem.length, iguais: recontagem.filter((r) => r.situacao === 'igual').length}],
+  });
+  dash.calc('hist_min', {
+    inputs: ['historico'],
+    title: 'Menor vantagem anterior no Brasil',
+    description: 'Menor vantagem de um líder de 1º turno nas eleições presidenciais brasileiras antes de 2026.',
+    fn: (historico) => [{vantagem_min: Math.min(...historico.filter((r) => r.pais === 'Brasil' && Number(r.ano) < 2026).map((r) => Number(r.vantagem_pp)))}],
+  });
+  dash.calc('mapa_cenarios', {
+    inputs: ['uf'],
+    title: 'Votos por UF em cada cenário de inversão',
+    description: 'Votos de Lula e Flávio por UF no 2º turno, com os dois trocados nas UFs de cada cenário.',
+    fn: (uf) => {
+      const cen = {publicado: [], brasil: uf.map((r) => r.uf)};
+      return Object.entries(cen).flatMap(([c, troca]) => uf.map((r) => {
+        const t = troca.includes(r.uf), L = Number(r.lula_2t), F = Number(r.flavio_2t);
+        return {cenario: c, uf: r.uf, trocado: t, lula: t ? F : L, flavio: t ? L : F};
+      }));
+    },
+  });
+  // Cores fixas: Lula em vermelho, Flávio em azul, em todos os gráficos
+  window.lxCor = {L: '#D7263D', F: '#1E63D6'};
+  dash.calc('viradas_total', {
+    inputs: ['viradas_uf'],
+    title: 'Total de seções viradas',
+    description: 'Soma das seções que viraram em cada sentido e dos votos de Lula e Flávio nelas, em todas as UFs.',
+    fn: (viradas_uf) => {
+      const soma = (c) => viradas_uf.reduce((s, r) => s + Number(r[c]), 0);
+      return [{secoes: soma('secoes'), fl: soma('virada_flavio_lula'), lf: soma('virada_lula_flavio'),
+        fl_L1: soma('fl_lula_1t'), fl_F1: soma('fl_flavio_1t'), fl_L2: soma('fl_lula_2t'), fl_F2: soma('fl_flavio_2t'),
+        lf_L1: soma('lf_lula_1t'), lf_F1: soma('lf_flavio_1t'), lf_L2: soma('lf_lula_2t'), lf_F2: soma('lf_flavio_2t')}];
+    },
+  });
+  dash.calc('mg_resumo', {
+    inputs: ['viradas_mg'],
+    title: 'Minas Gerais por situação',
+    description: 'Municípios e seções de MG em cada situação: Lula nos dois turnos, virou para Lula, Flávio nos dois, virou para Flávio.',
+    fn: (viradas_mg) => ['Lula nos dois', 'Virou para Lula', 'Flávio nos dois', 'Virou para Flávio'].map((s) => {
+      const m = viradas_mg.filter((r) => r.situacao === s);
+      return {situacao: s, municipios: m.length, secoes: m.reduce((a, r) => a + Number(r.secoes), 0)};
+    }),
+  });
+  dash.calc('mg_viraram', {
+    inputs: ['viradas_mg'],
+    title: 'Municípios de MG que viraram para Lula',
+    description: 'Municípios mineiros em que Flávio liderou o 1º turno e Lula venceu o 2º, do maior para o menor.',
+    fn: (viradas_mg) => viradas_mg.filter((r) => r.situacao === 'Virou para Lula').sort((a, b) => Number(b.secoes) - Number(a.secoes)),
+  });
+  window.lxNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+  window.lxFmt = (v, f) => {
+    const n = lxNum(v);
+    if (n === null) return v == null || v === '' ? '—' : String(v);
+    if (f === 'int') return n.toLocaleString('pt-BR', {maximumFractionDigits: 0});
+    if (f === 'dec') return n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (f === 'signed') return (n > 0 ? '+' : '') + n.toLocaleString('pt-BR', {maximumFractionDigits: 3});
+    return n.toLocaleString('pt-BR', {maximumFractionDigits: 3});
+  };
+  window.lxColors = (root) => {
+    root.style.setProperty('--lx-c0', lxCor.L);
+    root.style.setProperty('--lx-c1', lxCor.F);
+  };
+  document.querySelectorAll('.lx').forEach(lxColors);
+  // Encontra a linha indicada por data-where (col=valor&col2=valor2)
+  window.lxPick = (rows, where) => {
+    if (!where) return rows[0];
+    const conds = where.split('&').map((p) => p.split('=').map(decodeURIComponent));
+    return rows.find((r) => conds.every(([k, v]) => String(r[k]) === v));
+  };
+  window.lxTip = (box) => {
+    let t = box.querySelector('.tip');
+    if (!t) { t = document.createElement('div'); t.className = 'tip'; t.hidden = true; box.appendChild(t); }
+    return t;
+  };
+  window.lxPlace = (box, tip, x, y) => {
+    const w = box.clientWidth, tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(w - tw, x + 12)) + 'px';
+    tip.style.top = Math.max(0, y - 10) + 'px';
+  };
+  window.lxAxis = (g) => g.attr('font-size', null).attr('font-family', null)
+    .call((s) => s.selectAll('text').style('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)'))
+    .call((s) => s.selectAll('.domain').style('stroke', 'var(--cds-chart-axis)'))
+    .call((s) => s.selectAll('.tick line').style('stroke', 'var(--cds-chart-grid)'));
+</script>
+
+<script>
+  // Valores soltos no texto e nos cartões
+  dash.draw('v', (el) => {
+    const d = dash.data(el.dataset.source);
+    if (d.status !== 'ok') { el.textContent = '—'; return; }
+    const row = lxPick(d.data, el.dataset.where);
+    el.textContent = row ? lxFmt(row[el.dataset.field], el.dataset.fmt) : '—';
+    el.classList.toggle('ok', el.dataset.source === 'municipios' && el.dataset.field === 'divergentes' && lxNum(row && row.divergentes) === 0);
+  });
+
+  // Tabelas: escreve só as células, na ordem dos <th>
+  const tabela = (name, fmts, wrapCols = [], alerta = null) => dash.draw(name, (tb) => {
+    const d = dash.data(tb.dataset.source);
+    tb.replaceChildren();
+    if (d.status !== 'ok') return;
+    const cols = [...tb.closest('table').querySelectorAll('th')].map((th) => th.dataset.field);
+    for (const r of d.data) {
+      const tr = document.createElement('tr');
+      if (alerta && alerta(r)) tr.className = 'alerta';
+      for (const c of cols) {
+        const td = document.createElement('td');
+        td.textContent = fmts[c] ? lxFmt(r[c], fmts[c]) : (r[c] ?? '');
+        if (wrapCols.includes(c)) td.className = 'wrap';
+        tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+  });
+  tabela('tab-totais', {oficial_2t: 'int', soma_bus_2t: 'int', diferenca: 'signed', primeiro_turno: 'int'});
+  // Destaque: UF com Flávio 1 ponto ou mais abaixo do esperado; ocorrência fora da faixa do acaso
+  tabela('tab-uf', {lula_1t_pct: 'num', flavio_1t_pct: 'num', lula_2t_pct: 'num', flavio_2t_pct: 'num', desvio_flavio_pp: 'signed'}, [],
+    (r) => lxNum(r.desvio_flavio_pp) <= -0.95);
+  tabela('tab-marcas', {real: 'int', simulado_media: 'int', simulado_min: 'int', simulado_max: 'int'}, [],
+    (r) => lxNum(r.real) > lxNum(r.simulado_max));
+  tabela('tab-transf', {votos_1t: 'int', pct_lula: 'num', pct_flavio: 'num', votos_lula_est: 'int', votos_flavio_est: 'int'}, [],
+    (r) => /Caiado|Renan|Brancos|Nulos/.test(r.grupo));
+  tabela('tab-recontagem', {rdv_lula: 'int', bu_lula: 'int', rdv_flavio: 'int', bu_flavio: 'int', rdv_brancos: 'int', bu_brancos: 'int', rdv_nulos: 'int', bu_nulos: 'int'}, [],
+    (r) => r.situacao !== 'igual');
+  tabela('tab-bio', {sem_biometria_pct: 'num', lula_acima_esperado_pp: 'signed', flavio_acima_esperado_pp: 'signed', comparecimento_a_mais_pp: 'signed'});
+  tabela('tab-salto', {aptos: 'int', comp_1t: 'int', comp_2t: 'int', lula_1t: 'int', lula_2t: 'int', lula_esperado: 'num', flavio_1t: 'int', flavio_2t: 'int'});
+  tabela('tab-hist', {pct_lider_1t: 'num', pct_segundo_1t: 'num', vantagem_pp: 'num', pct_vencedor_2t: 'num'}, [],
+    (r) => r.pais === 'Brasil' && r.virou === 'sim');
+  tabela('tab-inversao', {lula: 'int', flavio: 'int', pct_lula: 'num', corr_simulada_min: 'num', corr_simulada_max: 'num', sims_compativeis: 'int', n_sim: 'int'});
+  tabela('tab-mg', {flavio_1t: 'int', lula_1t: 'int', flavio_2t: 'int', lula_2t: 'int', secoes: 'int'});
+  tabela('tab-acima', {comp_1t: 'int', comp_2t: 'int', lula_1t: 'int', lula_2t: 'int', flavio_1t: 'int', flavio_2t: 'int', sobra: 'int', ganho_lula: 'int', excesso: 'int'});
+  tabela('tab-destaques', {comp_1t: 'int', comp_2t: 'int', lula_1t: 'int', lula_2t: 'int', flavio_1t: 'int', flavio_2t: 'int', flavio_esperado: 'num', z: 'num'}, ['marcas']);
+  tabela('tab-janela-uf', {peso_pct: 'num', desvio_uf_pp: 'signed', contribuicao_pp: 'signed'});
+  tabela('tab-perm', {pior_janela_real: 'signed', acaso_media: 'signed', acaso_min: 'signed', acaso_max: 'signed'});
+  tabela('tab-injecao', {troca_pct: 'num', votos_movidos: 'int', pior_janela_pp: 'signed'});
+</script>
+
+<script>
+  // Totalização minuto a minuto: Lula x Flávio pelo horário de recebimento
+  window.lxTot = {modo: 'pct', periodo: 'noite'};
+  const lxBotoes = (cls, chave) => document.querySelectorAll(cls).forEach((b) => b.addEventListener('click', () => {
+    lxTot[chave] = b.dataset[chave];
+    document.querySelectorAll(cls).forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    dash.draw('totalizacao');
+  }));
+  lxBotoes('.lx-modo', 'modo');
+  lxBotoes('.lx-periodo', 'periodo');
+  dash.draw('totalizacao', (box) => {
+    const d = dash.data('totalizacao');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const parse = d3.utcParse('%Y-%m-%d %H:%M');
+    let prev = 0;
+    let pts = d.data.map((r) => {
+      const s = lxNum(r.secoes), p = {t: parse(r.hora), h: r.hora, s, ns: s - prev, ps: lxNum(r.pct_secoes),
+        L: lxNum(r.lula), F: lxNum(r.flavio), pL: lxNum(r.pct_lula), pF: lxNum(r.pct_flavio)};
+      prev = s; return p;
+    });
+    if (lxTot.periodo === 'noite') pts = pts.filter((p) => p.h <= '2026-10-25 22:30');
+    const pct = lxTot.modo === 'pct';
+    // Em %, os primeiros minutos têm poucas seções e oscilam muito: a escala parte de 1% das seções.
+    const vis = pct ? pts.filter((p) => p.ps >= 1) : pts;
+    const W = box.clientWidth || 700, H = 400, m = {t: 14, r: 16, b: 34, l: 64}, hb = 70;
+    const x = d3.scaleUtc(d3.extent(pts, (p) => p.t), [m.l, W - m.r]);
+    const yTop = H - m.b - hb - 14;
+    const y = pct
+      ? d3.scaleLinear([Math.floor(d3.min(vis, (p) => Math.min(p.pL, p.pF))) - 0.5, Math.ceil(d3.max(vis, (p) => Math.max(p.pL, p.pF))) + 0.5], [yTop, m.t])
+      : d3.scaleLinear([0, d3.max(pts, (p) => Math.max(p.L, p.F))], [yTop, m.t]).nice();
+    const yb = d3.scaleLinear([0, d3.max(pts, (p) => p.ns)], [H - m.b, H - m.b - hb]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const fmtY = pct ? (v) => v + '%' : (v) => (v / 1e6).toLocaleString('pt-BR') + ' mi';
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat(fmtY).tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    const fmtX = lxTot.periodo === 'noite' ? d3.utcFormat('%H:%M') : d3.utcFormat('%d/%m %H:%M');
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 90))).tickFormat(fmtX).tickSizeOuter(0)).call(lxAxis);
+    svg.selectAll('rect.ns').data(pts).join('rect').attr('class', 'ns')
+      .attr('x', (p) => x(p.t)).attr('width', Math.max(1, (W - m.l - m.r) / pts.length * 0.8))
+      .attr('y', (p) => yb(p.ns)).attr('height', (p) => H - m.b - yb(p.ns)).style('fill', 'var(--cds-chart-grid)');
+    if (pct) svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(50)).attr('y2', y(50)).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    const kL = pct ? 'pL' : 'L', kF = pct ? 'pF' : 'F';
+    for (const [k, c] of [[kL, lxCor.L], [kF, lxCor.F]]) {
+      svg.append('path').datum(vis).attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
+        .attr('d', d3.line().x((p) => x(p.t)).y((p) => y(p[k])));
+    }
+    const ult = vis[vis.length - 1];
+    const fim = pct ? (v) => lxFmt(v, 'dec') + '%' : (v) => (v / 1e6).toLocaleString('pt-BR', {maximumFractionDigits: 2}) + ' mi';
+    const yl = [y(ult[kL]), y(ult[kF])];
+    if (Math.abs(yl[0] - yl[1]) < 14) { const mid = (yl[0] + yl[1]) / 2, up = yl[0] <= yl[1]; yl[0] = mid + (up ? -7 : 7); yl[1] = mid + (up ? 7 : -7); }
+    [[yl[0], lxCor.L, `Lula ${fim(ult[kL])}`], [yl[1], lxCor.F, `Flávio ${fim(ult[kF])}`]].forEach(([yy, c, t]) =>
+      svg.append('text').attr('x', W - m.r - 4).attr('y', yy - 6).attr('text-anchor', 'end').style('fill', c).style('font-size', 'var(--cds-font-size-caption)').style('font-weight', 600).text(t));
+    const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).style('stroke', 'var(--cds-chart-axis)').attr('visibility', 'hidden');
+    const dots = [lxCor.L, lxCor.F].map((c) => svg.append('circle').attr('r', 4).attr('fill', c).attr('visibility', 'hidden'));
+    const tip = lxTip(box);
+    svg.on('pointermove', (ev) => {
+      const [mx] = d3.pointer(ev);
+      const p = pts[Math.min(pts.length - 1, d3.bisector((q) => q.t).center(pts, x.invert(mx)))];
+      const px = x(p.t);
+      rule.attr('x1', px).attr('x2', px).attr('visibility', 'visible');
+      const show = !pct || p.ps >= 1;
+      dots[0].attr('cx', px).attr('cy', y(p[kL])).attr('visibility', show ? 'visible' : 'hidden');
+      dots[1].attr('cx', px).attr('cy', y(p[kF])).attr('visibility', show ? 'visible' : 'hidden');
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't';
+      t.textContent = `${p.h.slice(8, 10)}/${p.h.slice(5, 7)} ${p.h.slice(11)} · ${lxFmt(p.ps, 'num')}% das seções (+${lxFmt(p.ns, 'int')} no minuto)`; tip.appendChild(t);
+      for (const [c, n, v, pc] of [[lxCor.L, 'Lula', p.L, p.pL], [lxCor.F, 'Flávio', p.F, p.pF]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(v, 'int')} (${lxFmt(pc, 'dec')}%)`); tip.appendChild(l);
+      }
+      const dif = document.createElement('div'); dif.textContent = `Diferença: ${lxFmt(p.L - p.F, 'signed')} votos`; tip.appendChild(dif);
+      lxPlace(box, tip, px, Math.min(y(p[kL]), y(p[kF])));
+    }).on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); dots.forEach((c) => c.attr('visibility', 'hidden')); });
+  });
+
+  // Curva acumulada: x = % das seções recebidas, y = % de Flávio
+  dash.draw('curva', (box) => {
+    const d = dash.data('curva');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const total = d3.max(d.data, (r) => lxNum(r.secoes));
+    const pts = d.data.map((r) => ({h: r.hora, s: lxNum(r.secoes), x: 100 * lxNum(r.secoes) / total, real: lxNum(r.pct_flavio_real), esp: lxNum(r.pct_flavio_esperado)}))
+      .filter((p) => p.x >= 1);
+    const W = box.clientWidth || 600, H = 300, m = {t: 12, r: 16, b: 32, l: 44};
+    const x = d3.scaleLinear([0, 100], [m.l, W - m.r]);
+    const lo = d3.min(pts, (p) => Math.min(p.real, p.esp)), hi = d3.max(pts, (p) => Math.max(p.real, p.esp));
+    const y = d3.scaleLinear([Math.floor(lo) - 0.5, Math.ceil(hi) + 0.5], [H - m.b, m.t]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.min(10, W / 70)).tickFormat((v) => v + '%').tickSizeOuter(0)).call(lxAxis);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat((v) => v + '%').tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    const line = (k) => d3.line().x((p) => x(p.x)).y((p) => y(p[k]));
+    svg.append('path').datum(pts).attr('fill', 'none').style('stroke', 'var(--color-fg-muted)').attr('stroke-width', 2).attr('stroke-dasharray', '5 4').attr('d', line('esp'));
+    svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', lxCor.F).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line('real'));
+    const dot = svg.append('circle').attr('r', 4).attr('fill', lxCor.F).attr('visibility', 'hidden');
+    const tip = lxTip(box);
+    svg.on('pointermove', (ev) => {
+      const [mx] = d3.pointer(ev);
+      const i = Math.min(pts.length - 1, d3.bisector((p) => p.x).center(pts, x.invert(mx)));
+      const p = pts[i];
+      dot.attr('cx', x(p.x)).attr('cy', y(p.real)).attr('visibility', 'visible');
+      tip.hidden = false;
+      tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `${p.h.slice(8, 10)}/${p.h.slice(5, 7)} ${p.h.slice(11)} · ${lxFmt(p.x, 'num')}% das seções`; tip.appendChild(t);
+      for (const [c, n, v] of [[lxCor.F, 'Real', p.real], ['var(--color-fg-muted)', 'Esperada', p.esp]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(v, 'dec')}%`); tip.appendChild(l);
+      }
+      lxPlace(box, tip, x(p.x), y(p.real));
+    }).on('pointerleave', () => { tip.hidden = true; dot.attr('visibility', 'hidden'); });
+  });
+
+  // Janelas de 10 min com a faixa do acaso
+  dash.draw('janelas', (box) => {
+    const d = dash.data('janelas');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const rows = d.data.map((r) => ({j: r.janela.slice(11, 16), n: lxNum(r.secoes), v: lxNum(r.desvio_pp), a: lxNum(r.acaso_min), b: lxNum(r.acaso_max)}));
+    const W = box.clientWidth || 500, H = 240, m = {t: 10, r: 8, b: 40, l: 44};
+    const x = d3.scaleBand(rows.map((r) => r.j), [m.l, W - m.r]).padding(0.25);
+    const ext = d3.max(rows, (r) => Math.max(Math.abs(r.v), Math.abs(r.a), Math.abs(r.b)));
+    const y = d3.scaleLinear([-ext * 1.1, ext * 1.1], [H - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => lxFmt(v, 'signed')).tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    const step = Math.max(1, Math.ceil(30 / x.step()));
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(rows.filter((_, i) => i % step === 0).map((r) => r.j)).tickSizeOuter(0)).call(lxAxis)
+      .call((g) => g.selectAll('text').attr('transform', 'rotate(-40)').attr('text-anchor', 'end').attr('dx', '-.4em').attr('dy', '.5em'));
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-reference)');
+    svg.selectAll('rect.band').data(rows).join('rect').attr('class', 'band').attr('x', (r) => x(r.j) - x.step() * x.paddingInner() / 2).attr('width', x.step())
+      .attr('y', (r) => y(r.b)).attr('height', (r) => Math.max(1, y(r.a) - y(r.b))).style('fill', 'var(--cds-chart-grid)');
+    const bars = svg.selectAll('rect.bar').data(rows).join('rect').attr('class', 'bar').attr('x', (r) => x(r.j)).attr('width', x.bandwidth())
+      .attr('y', (r) => y(Math.max(0, r.v))).attr('height', (r) => Math.max(1, Math.abs(y(r.v) - y(0)))).attr('rx', 2).attr('fill', lxCor.F);
+    // Janelas fora da faixa do acaso ficam na cor de alerta
+    bars.filter((r) => r.v < r.a || r.v > r.b).style('fill', 'var(--cds-chart-status-critical)');
+    const tip = lxTip(box);
+    bars.on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `${r.j} · ${lxFmt(r.n, 'int')} seções`; tip.appendChild(t);
+      const a = document.createElement('div'); a.textContent = `Real − esperado: ${lxFmt(r.v, 'signed')} p.p.`; tip.appendChild(a);
+      const b = document.createElement('div'); b.textContent = `Acaso: ${lxFmt(r.a, 'signed')} a ${lxFmt(r.b, 'signed')}`; tip.appendChild(b);
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+
+  // Mapas: contorno oficial das UFs (IBGE) carregado de mapa_br.js
+  const lxCen = (el) => {
+    const d = dash.data('mapa_cenarios');
+    return d.status === 'ok' ? d.data.filter((r) => r.cenario === el.dataset.cen) : null;
+  };
+  dash.draw('mapres', (el) => {
+    const rows = lxCen(el);
+    if (!rows) { el.textContent = '—'; return; }
+    const L = d3.sum(rows, (r) => r.lula), F = d3.sum(rows, (r) => r.flavio);
+    const pl = 100 * L / (L + F);
+    el.textContent = `${pl >= 50 ? 'Lula' : 'Flávio'} vence no Brasil com ${lxFmt(Math.max(pl, 100 - pl), 'dec')}% (${lxFmt(Math.max(L, F), 'int')} votos)`;
+  });
+  dash.draw('mapa', (box) => {
+    const rows = lxCen(box);
+    box.replaceChildren();
+    if (!rows || !window.lxMapaBR) return;
+    const M = lxMapaBR, W = box.clientWidth || 300, k = W / M.w, H = M.h * k;
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${M.w} ${M.h}`);
+    const op = d3.scaleLinear([0, 30], [0.35, 1]).clamp(true);
+    const cor = (r) => r.lula >= r.flavio ? lxCor.L : lxCor.F;
+    const mg = (r) => Math.abs(100 * (r.lula - r.flavio) / (r.lula + r.flavio));
+    const ufs = rows.filter((r) => M.uf[r.uf]);
+    const g = svg.selectAll('g.uf').data(ufs).join('g').attr('class', 'uf');
+    g.append('path').attr('d', (r) => M.uf[r.uf]).attr('fill', cor).attr('fill-opacity', (r) => op(mg(r)))
+      .style('stroke', (r) => r.trocado ? 'var(--color-fg)' : 'var(--color-bg)').attr('stroke-width', (r) => r.trocado ? 3 : 1.5).attr('stroke-linejoin', 'round');
+    // Sigla no centro de cada UF; as muito pequenas (DF) ficam só no tooltip
+    g.each(function (r) {
+      const bb = this.querySelector('path').getBBox();
+      if (bb.width < 30 && bb.height < 30) return;
+      d3.select(this).append('text').attr('x', bb.x + bb.width / 2).attr('y', bb.y + bb.height / 2 + 9).attr('text-anchor', 'middle')
+        .style('font-size', Math.max(9, 11 / k) + 'px').style('font-weight', 600).style('fill', 'var(--color-fg)').style('pointer-events', 'none').text(r.uf);
+    });
+    // Exterior: quadrado no canto
+    const zz = rows.find((r) => r.uf === 'ZZ');
+    if (zz) {
+      const gz = svg.append('g').datum(zz).attr('class', 'uf').attr('transform', `translate(${M.w - 120},20)`);
+      gz.append('rect').attr('width', 100).attr('height', 70).attr('rx', 6).attr('fill', cor(zz)).attr('fill-opacity', op(mg(zz)))
+        .style('stroke', zz.trocado ? 'var(--color-fg)' : 'none').attr('stroke-width', 3);
+      gz.append('text').attr('x', 50).attr('y', 44).attr('text-anchor', 'middle').style('font-size', Math.max(9, 11 / k) + 'px').style('font-weight', 600)
+        .style('fill', 'var(--color-fg)').style('pointer-events', 'none').text('Exterior');
+    }
+    const tip = lxTip(box);
+    svg.selectAll('g.uf').on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = (r.uf === 'ZZ' ? 'Exterior' : r.uf) + (r.trocado ? ' · votos trocados' : ''); tip.appendChild(t);
+      const tot = r.lula + r.flavio;
+      for (const [c, n, v] of [[lxCor.L, 'Lula', r.lula], [lxCor.F, 'Flávio', r.flavio]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(v, 'int')} (${lxFmt(100 * v / tot, 'dec')}%)`); tip.appendChild(l);
+      }
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+
+  // Viradas por UF: mapa e barras
+  dash.draw('mapa-viradas', (box) => {
+    const d = dash.data('viradas_uf');
+    box.replaceChildren();
+    if (d.status !== 'ok' || !window.lxMapaBR) return;
+    const M = lxMapaBR, rows = d.data.filter((r) => M.uf[r.uf]);
+    const max = d3.max(rows, (r) => lxNum(r.pct_flavio_lula));
+    const cor = d3.scaleLinear([0, max], ['#FBE3E6', lxCor.L]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${M.w} ${M.h}`);
+    const k = (box.clientWidth || 300) / M.w;
+    const g = svg.selectAll('g').data(rows).join('g');
+    g.append('path').attr('d', (r) => M.uf[r.uf]).attr('fill', (r) => cor(lxNum(r.pct_flavio_lula))).style('stroke', 'var(--color-bg)').attr('stroke-width', 1.5);
+    g.each(function (r) {
+      const bb = this.querySelector('path').getBBox();
+      if (bb.width < 30 && bb.height < 30) return;
+      d3.select(this).append('text').attr('x', bb.x + bb.width / 2).attr('y', bb.y + bb.height / 2 + 9).attr('text-anchor', 'middle')
+        .style('font-size', Math.max(9, 11 / k) + 'px').style('font-weight', 600).style('fill', '#1a1a1a').style('pointer-events', 'none').text(r.uf);
+    });
+    const tip = lxTip(box);
+    g.on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `${r.uf} · ${lxFmt(r.secoes, 'int')} seções`; tip.appendChild(t);
+      const linha = (txt) => { const e = document.createElement('div'); e.textContent = txt; tip.appendChild(e); };
+      linha(`Viraram para Lula: ${lxFmt(r.virada_flavio_lula, 'int')} seções (${lxFmt(r.pct_flavio_lula, 'dec')}%)`);
+      linha(`  Lula ${lxFmt(r.fl_lula_1t, 'int')} → ${lxFmt(r.fl_lula_2t, 'int')} votos`);
+      linha(`  Flávio ${lxFmt(r.fl_flavio_1t, 'int')} → ${lxFmt(r.fl_flavio_2t, 'int')} votos`);
+      linha(`Viraram para Flávio: ${lxFmt(r.virada_lula_flavio, 'int')} seções (${lxFmt(r.pct_lula_flavio, 'dec')}%)`);
+      linha(`  Lula ${lxFmt(r.lf_lula_1t, 'int')} → ${lxFmt(r.lf_lula_2t, 'int')} votos`);
+      linha(`  Flávio ${lxFmt(r.lf_flavio_1t, 'int')} → ${lxFmt(r.lf_flavio_2t, 'int')} votos`);
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+  dash.draw('barras-viradas', (box) => {
+    const d = dash.data('viradas_uf');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const rows = d.data.map((r) => ({uf: r.uf, fl: lxNum(r.pct_flavio_lula), lf: lxNum(r.pct_lula_flavio), nfl: lxNum(r.virada_flavio_lula), nlf: lxNum(r.virada_lula_flavio),
+      ofl: lxNum(r.fl_lula_2t) + lxNum(r.fl_flavio_2t), olf: lxNum(r.lf_lula_2t) + lxNum(r.lf_flavio_2t)}))
+      .sort((a, b) => b.fl - a.fl);
+    const W = box.clientWidth || 400, bh = 13, m = {t: 4, r: 56, b: 24, l: 34}, H = m.t + m.b + rows.length * (bh + 2);
+    const y = d3.scaleBand(rows.map((r) => r.uf), [m.t, H - m.b]).padding(0.15);
+    const x = d3.scaleLinear([0, d3.max(rows, (r) => r.fl + r.lf)], [m.l, W - m.r]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(5).tickFormat((v) => v + '%').tickSize(-(H - m.t - m.b))).call(lxAxis);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickSize(0)).call(lxAxis).call((g) => g.select('.domain').remove());
+    const g = svg.selectAll('g.b').data(rows).join('g').attr('class', 'b');
+    g.append('rect').attr('x', x(0)).attr('y', (r) => y(r.uf)).attr('height', y.bandwidth()).attr('width', (r) => x(r.fl) - x(0)).attr('fill', lxCor.L).attr('rx', 2);
+    g.append('rect').attr('x', (r) => x(r.fl)).attr('y', (r) => y(r.uf)).attr('height', y.bandwidth()).attr('width', (r) => Math.max(0, x(r.fl + r.lf) - x(r.fl))).attr('fill', lxCor.F);
+    g.append('text').attr('x', (r) => x(r.fl + r.lf) + 4).attr('y', (r) => y(r.uf) + y.bandwidth() / 2 + 4).style('font-size', 'var(--cds-font-size-caption)')
+      .style('fill', 'var(--color-fg-muted)').text((r) => lxFmt(r.fl, 'dec') + '%');
+    const tip = lxTip(box);
+    g.on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = r.uf; tip.appendChild(t);
+      for (const [c, n, v, p, o] of [[lxCor.L, 'Flávio → Lula', r.nfl, r.fl, r.ofl], [lxCor.F, 'Lula → Flávio', r.nlf, r.lf, r.olf]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(v, 'int')} seções (${lxFmt(p, 'dec')}%), ${lxFmt(o, 'int')} votos de Lula e Flávio no 2º turno`); tip.appendChild(l);
+      }
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+
+  // Minas Gerais por município
+  window.lxCorMG = {'Lula nos dois': '#7A0E1C', 'Virou para Lula': '#F08A96', 'Flávio nos dois': '#0E3A85', 'Virou para Flávio': '#8DB3F0'};
+  dash.draw('mapa-mg', (box) => {
+    const d = dash.data('viradas_mg');
+    box.replaceChildren();
+    if (d.status !== 'ok' || !window.lxMapaMG) return;
+    const M = lxMapaMG, rows = d.data.filter((r) => M.mun[r.cd_tse]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${M.w} ${M.h}`);
+    const p = svg.selectAll('path').data(rows).join('path').attr('d', (r) => M.mun[r.cd_tse]).attr('fill', (r) => lxCorMG[r.situacao])
+      .style('stroke', 'var(--color-bg)').attr('stroke-width', 0.8);
+    const tip = lxTip(box);
+    p.on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `${r.municipio} · ${r.situacao}`; tip.appendChild(t);
+      for (const [c, n, a, b] of [[lxCor.L, 'Lula', r.lula_1t, r.lula_2t], [lxCor.F, 'Flávio', r.flavio_1t, r.flavio_2t]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(a, 'int')} → ${lxFmt(b, 'int')}`); tip.appendChild(l);
+      }
+      const v = document.createElement('div'); v.textContent = `Seções que viraram: ${lxFmt(r.virada_flavio_lula, 'int')} para Lula, ${lxFmt(r.virada_lula_flavio, 'int')} para Flávio, de ${lxFmt(r.secoes, 'int')}`; tip.appendChild(v);
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+  dash.draw('barras-mg', (box) => {
+    const d = dash.data('mg_resumo');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const rows = d.data;
+    const W = box.clientWidth || 400, m = {t: 8, r: 190, b: 8, l: 120}, H = 200;
+    const y = d3.scaleBand(rows.map((r) => r.situacao), [m.t, H - m.b]).padding(0.25);
+    const x = d3.scaleLinear([0, d3.max(rows, (r) => r.municipios)], [m.l, W - m.r]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).tickSize(0)).call(lxAxis).call((g) => g.select('.domain').remove());
+    svg.selectAll('rect').data(rows).join('rect').attr('x', m.l).attr('y', (r) => y(r.situacao)).attr('height', y.bandwidth())
+      .attr('width', (r) => x(r.municipios) - m.l).attr('fill', (r) => lxCorMG[r.situacao]).attr('rx', 3);
+    svg.selectAll('text.n').data(rows).join('text').attr('class', 'n').attr('x', (r) => x(r.municipios) + 6).attr('y', (r) => y(r.situacao) + y.bandwidth() / 2 + 4)
+      .style('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg)').text((r) => `${lxFmt(r.municipios, 'int')} mun. · ${lxFmt(r.secoes, 'int')} seções`);
+  });
+
+  // Simulador: % de cada eleitorado para Lula -> quanto falta vir de brancos, nulos e eleitores novos
+  window.lxSim = () => {
+    const f = dash.data('fontes'), g = dash.data('gerais');
+    if (f.status !== 'ok' || g.status !== 'ok') return null;
+    const votos = (nome) => lxNum((f.data.find((r) => r.fonte === nome) || {}).votos) || 0;
+    let lula = 0, flavio = 0;
+    document.querySelectorAll('.lx-sim').forEach((el) => {
+      const v = votos(el.dataset.fonte), p = Number(el.value) / 100;
+      lula += v * p; flavio += v * (1 - p);
+    });
+    const ganho = lxNum(lxPick(g.data, 'id=ganho').a);
+    const disp = f.data.filter((r) => r.grupo === 'liquido').reduce((s, r) => s + lxNum(r.votos), 0);
+    const falta = ganho - lula;
+    return {lula, flavio, falta, disp, pct: 100 * falta / disp};
+  };
+  document.querySelectorAll('.lx-sim').forEach((el) => el.addEventListener('input', () => {
+    dash.draw('sim'); dash.draw('simpct'); dash.draw('simmsg');
+  }));
+  dash.draw('simpct', (el) => {
+    const inp = document.getElementById(el.dataset.for);
+    el.textContent = inp ? inp.value + '%' : '—';
+  });
+  dash.draw('sim', (el) => {
+    const s = lxSim();
+    if (!s) { el.textContent = '—'; return; }
+    const k = el.dataset.out;
+    el.textContent = k === 'pct' ? lxFmt(Math.round(s.pct), 'int') + '%' : lxFmt(Math.round(s[k]), 'int');
+    el.classList.toggle('bad', k === 'pct' && s.pct > 100);
+  });
+  dash.draw('simmsg', () => {
+    const s = lxSim();
+    document.querySelectorAll('.sim-msg').forEach((p) => {
+      p.hidden = !s || (p.dataset.msg === 'nao-cabe') !== (s.pct > 100);
+    });
+  });
+
+  // Variação da % de Flávio a cada minuto: real x esperada pelo 1º turno das urnas que chegaram
+  dash.draw('delta', (box) => {
+    const d = dash.data('curva_delta');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const pts = d.data.map((r) => ({h: r.hora, r: lxNum(r.variacao_real_pp), e: lxNum(r.variacao_esperada_pp)}));
+    const W = box.clientWidth || 600, H = 300, m = {t: 12, r: 16, b: 36, l: 52};
+    const ext = d3.max(pts, (p) => Math.max(Math.abs(p.r), Math.abs(p.e))) * 1.05;
+    const x = d3.scaleLinear([-ext, ext], [m.l, W - m.r]).nice();
+    const y = d3.scaleLinear([-ext, ext], [H - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 90))).tickFormat((v) => lxFmt(v, 'signed')).tickSize(-(H - m.t - m.b))).call(lxAxis);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat((v) => lxFmt(v, 'signed')).tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    const [a, b] = [Math.max(x.domain()[0], y.domain()[0]), Math.min(x.domain()[1], y.domain()[1])];
+    svg.append('line').attr('x1', x(a)).attr('y1', y(a)).attr('x2', x(b)).attr('y2', y(b)).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    const dots = svg.selectAll('circle').data(pts).join('circle').attr('cx', (p) => x(p.e)).attr('cy', (p) => y(p.r)).attr('r', 3)
+      .attr('fill', lxCor.F).attr('fill-opacity', 0.6);
+    const tip = lxTip(box);
+    dots.on('pointermove', (ev, p) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `${p.h.slice(8, 10)}/${p.h.slice(5, 7)} ${p.h.slice(11)}`; tip.appendChild(t);
+      const r1 = document.createElement('div'); r1.textContent = `Variação real: ${lxFmt(p.r, 'signed')} p.p.`; tip.appendChild(r1);
+      const r2 = document.createElement('div'); r2.textContent = `Esperada pelo 1º turno: ${lxFmt(p.e, 'signed')} p.p.`; tip.appendChild(r2);
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+
+  // Ganho médio por decil de variação do comparecimento
+  dash.draw('decis', (box) => {
+    const d = dash.data('decis');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const rows = d.data.map((r) => ({k: String(r.decil), c: lxNum(r.delta_comp), L: lxNum(r.delta_lula), F: lxNum(r.delta_flavio), n: lxNum(r.secoes)}));
+    const W = box.clientWidth || 600, H = 300, m = {t: 12, r: 8, b: 48, l: 40};
+    const x = d3.scaleBand(rows.map((r) => r.k), [m.l, W - m.r]).padding(0.2);
+    const x2 = d3.scaleBand(['L', 'F'], [0, x.bandwidth()]).padding(0.1);
+    const y = d3.scaleLinear([Math.min(0, d3.min(rows, (r) => Math.min(r.L, r.F))), d3.max(rows, (r) => Math.max(r.L, r.F))], [H - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickSizeOuter(0)).call(lxAxis);
+    // Variação média do comparecimento sob cada grupo, só quando cabe sem encostar no vizinho
+    svg.selectAll('text.c').data(x.step() >= 60 ? rows : []).join('text').attr('class', 'c').attr('x', (r) => x(r.k) + x.bandwidth() / 2).attr('y', H - m.b + 38).attr('text-anchor', 'middle')
+      .style('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text((r) => `${lxFmt(r.c, 'signed')} el.`);
+    const g = svg.selectAll('g.d').data(rows).join('g').attr('class', 'd').attr('transform', (r) => `translate(${x(r.k)},0)`);
+    const bars = g.selectAll('rect').data((r) => [{r, s: 'L', v: r.L}, {r, s: 'F', v: r.F}]).join('rect')
+      .attr('x', (b) => x2(b.s)).attr('width', x2.bandwidth()).attr('y', (b) => y(Math.max(0, b.v))).attr('height', (b) => Math.max(1, Math.abs(y(b.v) - y(0))))
+      .attr('rx', 2).attr('fill', (b) => b.s === 'L' ? lxCor.L : lxCor.F);
+    const tip = lxTip(box);
+    bars.on('pointermove', (ev, b) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const t = document.createElement('div'); t.className = 't'; t.textContent = `Grupo ${b.r.k} · comparecimento ${lxFmt(b.r.c, 'signed')} por seção`; tip.appendChild(t);
+      for (const [c, n, v] of [[lxCor.L, 'Lula', b.r.L], [lxCor.F, 'Flávio', b.r.F]]) {
+        const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
+        l.append(sw, `${n}: ${lxFmt(v, 'signed')} votos por seção`); tip.appendChild(l);
+      }
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+</script>
+
+<div class="lx page" style="margin-top:3rem">
+  <section class="sec" id="dados">
+    <h2>Dados e como conferir</h2>
+    <p>Todos os números desta página vêm dos CSVs em <a href="dados/">dados/</a>, calculados pelos scripts da pasta <code>analise/</code> do repositório a partir dos arquivos originais do TSE. Os arquivos de urna (boletim, RDV, logs) estão nos <i>Releases</i> do repositório, com o SHA-256 e o SHA-512 de cada um no manifesto. Qualquer pessoa pode baixar os mesmos arquivos do TSE, comparar os hashes e rodar os scripts para chegar aos mesmos números.</p>
+    <p class="muted">Análise independente. Não é publicação do TSE nem de partido ou candidato.</p>
+  </section>
+</div>
+</body>
+</html>
