@@ -18,9 +18,9 @@ Esta análise é independente. Não é publicação do TSE, de partido ou de can
 
 Os pontos de atenção (ganho de Lula maior que a "sobra" disponível em parte das seções, comparecimento que saltou em algumas seções, janelas da apuração) estão no painel com os números e as tabelas de seções para conferência individual. Os limites da análise também estão no painel: ela confere os arquivos publicados entre si; não confere se o boletim impresso afixado na seção é igual ao arquivo.
 
-## Alegações conferidas
+## Indícios de inconsistência
 
-O painel abre com uma seção em destaque que confere, nos boletins de urna, números que circularam após a eleição. Todos conferem, alguns com pequena diferença. O que muda é a leitura quando cada grupo de urnas é comparado com ele mesmo no 1º turno:
+A seção em destaque "Indícios de inconsistência", logo antes dos pontos de atenção, confere, nos boletins de urna, números que circularam após a eleição. Todos conferem, alguns com pequena diferença. O que muda é a leitura quando cada grupo de urnas é comparado com ele mesmo no 1º turno:
 
 | Alegação | Nos boletins | Comparado com o 1º turno |
 |---|---|---|
