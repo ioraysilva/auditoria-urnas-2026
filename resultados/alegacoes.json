@@ -1,0 +1,240 @@
+{
+ "secoes": 499205,
+ "total": {
+  "lula": 64256232,
+  "flavio": 59826041,
+  "margem": 4430191,
+  "comparecimento": 128236074
+ },
+ "zero": {
+  "flavio": 106,
+  "lula": 4,
+  "votos_lula_nelas": 14860,
+  "flavio_1t_nelas": 118,
+  "flavio_1t_zero": 50,
+  "flavio_1t_ate2": 90,
+  "por_uf": {
+   "AM": 30,
+   "MA": 20,
+   "PA": 16,
+   "RR": 8,
+   "TO": 7,
+   "MT": 5,
+   "BA": 4,
+   "AC": 3,
+   "MG": 2,
+   "RS": 2,
+   "CE": 2,
+   "MS": 1,
+   "PI": 1,
+   "ES": 1,
+   "PB": 1,
+   "PE": 1,
+   "PR": 1,
+   "RO": 1
+  }
+ },
+ "extremos": {
+  "l100": 106,
+  "f100": 4,
+  "l90": 6899,
+  "f90": 384,
+  "t1_l100": 80,
+  "t1_f100": 8,
+  "t1_l90": 6099,
+  "t1_f90": 726,
+  "esp_l100": 5,
+  "esp_f100": 0,
+  "esp_l90": 8676,
+  "esp_f90": 445
+ },
+ "sem_horario": {
+  "secoes": 1308,
+  "comp": 381443
+ },
+ "horario": {
+  "local": {
+   "até 17:00": {
+    "secoes": 150742.0,
+    "comp": 37621884.0,
+    "L": 17364595.0,
+    "F": 19113063.0,
+    "L1": 14640587.0,
+    "F1": 18037642.0,
+    "eL": 17386126.699999936,
+    "eF": 19088569.700000007
+   },
+   "17:01 a 17:15": {
+    "secoes": 338394.0,
+    "comp": 87716928.0,
+    "L": 45339344.0,
+    "F": 39467923.0,
+    "L1": 37977136.0,
+    "F1": 36929363.0,
+    "eL": 45322876.79999969,
+    "eF": 39487426.600000545
+   },
+   "17:16 a 18:59": {
+    "secoes": 2419.0,
+    "comp": 657545.0,
+    "L": 363169.0,
+    "F": 271542.0,
+    "L1": 301151.0,
+    "F1": 251231.0,
+    "eL": 362174.0999999999,
+    "eF": 272582.80000000057
+   },
+   "19:00 ou depois": {
+    "secoes": 6342.0,
+    "comp": 1858274.0,
+    "L": 988970.0,
+    "F": 802016.0,
+    "L1": 803277.0,
+    "F1": 742367.0,
+    "eL": 983170.3000000023,
+    "eF": 808879.8000000024
+   }
+  },
+  "brasilia": {
+   "17:01 a 17:15": {
+    "secoes": 362991.0,
+    "comp": 93608094.0,
+    "L": 47618561.0,
+    "F": 42931021.0,
+    "L1": 39954911.0,
+    "F1": 40311123.0,
+    "eL": 47578424.10000002,
+    "eF": 42980520.99999978
+   },
+   "até 17:00": {
+    "secoes": 126058.0,
+    "comp": 31709482.0,
+    "L": 15074899.0,
+    "F": 15639776.0,
+    "L1": 12653215.0,
+    "F1": 14645670.0,
+    "eL": 15120132.200000007,
+    "eF": 15585151.499999948
+   },
+   "17:16 a 18:59": {
+    "secoes": 2496.0,
+    "comp": 675796.0,
+    "L": 372799.0,
+    "F": 279652.0,
+    "L1": 310039.0,
+    "F1": 259445.0,
+    "eL": 371776.59999999974,
+    "eF": 280827.0000000004
+   },
+   "19:00 ou depois": {
+    "secoes": 6352.0,
+    "comp": 1861259.0,
+    "L": 989819.0,
+    "F": 804095.0,
+    "L1": 803986.0,
+    "F1": 744365.0,
+    "eL": 984015.0000000022,
+    "eF": 810959.4000000026
+   }
+  }
+ },
+ "biometria": {
+  "campo1": 7251810,
+  "campo2_biometria": 111970333,
+  "campo3": 8632488,
+  "comp": 127854631,
+  "secoes_sem_dado": 1308
+ },
+ "biometria_quintis": [
+  {
+   "campo": "campo1",
+   "quintil": 1,
+   "secoes": 99567,
+   "pct_sem_biometria": 0.33,
+   "lula_acima_esperado_pp": -0.141,
+   "flavio_acima_esperado_pp": 0.159,
+   "lula_acima_esperado_votos": -34662
+  },
+  {
+   "campo": "campo1",
+   "quintil": 2,
+   "secoes": 99568,
+   "pct_sem_biometria": 1.76,
+   "lula_acima_esperado_pp": -0.141,
+   "flavio_acima_esperado_pp": 0.15,
+   "lula_acima_esperado_votos": -35802
+  },
+  {
+   "campo": "campo1",
+   "quintil": 3,
+   "secoes": 99567,
+   "pct_sem_biometria": 3.55,
+   "lula_acima_esperado_pp": -0.03,
+   "flavio_acima_esperado_pp": 0.035,
+   "lula_acima_esperado_votos": -7763
+  },
+  {
+   "campo": "campo1",
+   "quintil": 4,
+   "secoes": 99568,
+   "pct_sem_biometria": 6.32,
+   "lula_acima_esperado_pp": 0.099,
+   "flavio_acima_esperado_pp": -0.113,
+   "lula_acima_esperado_votos": 26048
+  },
+  {
+   "campo": "campo1",
+   "quintil": 5,
+   "secoes": 99568,
+   "pct_sem_biometria": 16.19,
+   "lula_acima_esperado_pp": 0.211,
+   "flavio_acima_esperado_pp": -0.233,
+   "lula_acima_esperado_votos": 53824
+  },
+  {
+   "campo": "campo3",
+   "quintil": 1,
+   "secoes": 99567,
+   "pct_sem_biometria": 2.79,
+   "lula_acima_esperado_pp": 0.19,
+   "flavio_acima_esperado_pp": -0.219,
+   "lula_acima_esperado_votos": 49768
+  },
+  {
+   "campo": "campo3",
+   "quintil": 2,
+   "secoes": 99568,
+   "pct_sem_biometria": 4.61,
+   "lula_acima_esperado_pp": 0.098,
+   "flavio_acima_esperado_pp": -0.108,
+   "lula_acima_esperado_votos": 26055
+  },
+  {
+   "campo": "campo3",
+   "quintil": 3,
+   "secoes": 99567,
+   "pct_sem_biometria": 6.15,
+   "lula_acima_esperado_pp": 0.004,
+   "flavio_acima_esperado_pp": -0.012,
+   "lula_acima_esperado_votos": 926
+  },
+  {
+   "campo": "campo3",
+   "quintil": 4,
+   "secoes": 99568,
+   "pct_sem_biometria": 8.1,
+   "lula_acima_esperado_pp": -0.074,
+   "flavio_acima_esperado_pp": 0.084,
+   "lula_acima_esperado_votos": -18798
+  },
+  {
+   "campo": "campo3",
+   "quintil": 5,
+   "secoes": 99568,
+   "pct_sem_biometria": 12.71,
+   "lula_acima_esperado_pp": -0.236,
+   "flavio_acima_esperado_pp": 0.272,
+   "lula_acima_esperado_votos": -56307
+  }
+ ]
+}

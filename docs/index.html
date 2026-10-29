@@ -42,7 +42,7 @@
 <script>
 // Substitui o ambiente do painel: dados vêm de dados/<nome>.csv
 (() => {
-  const DATASETS = ['acima_sobra', 'biometria', 'comparecimento', 'curva', 'curva_delta', 'decis', 'destaques', 'fontes', 'gerais', 'hipoteses', 'hist', 'historico', 'injecao', 'inversao', 'inversao_testes', 'janela_uf', 'janelas', 'marcas', 'municipios', 'permutacao', 'pontos', 'rdv_brasil', 'recontagem', 'salto_comparecimento', 'totais', 'totalizacao', 'transferencia', 'uf', 'viradas_mg', 'viradas_uf'];
+  const DATASETS = ['acima_sobra', 'alegacoes', 'biometria', 'biometria_faixas', 'biometria_quintis', 'comparecimento', 'curva', 'curva_delta', 'decis', 'destaques', 'extremos', 'fontes', 'gerais', 'hipoteses', 'hist', 'historico', 'horario', 'injecao', 'inversao', 'inversao_testes', 'janela_uf', 'janelas', 'marcas', 'municipios', 'permutacao', 'pontos', 'rdv_brasil', 'recontagem', 'salto_comparecimento', 'totais', 'totalizacao', 'transferencia', 'uf', 'viradas_mg', 'viradas_uf', 'zero_flavio'];
   const store = {}, calcs = {}, draws = {};
   let pronto = false;
   const rodar = (nome) => {
@@ -96,6 +96,8 @@
   .lx .chart.short { min-height: 240px; }
   .lx .chart.tall { min-height: 400px; }
   .lx .card.alerta { border-color: var(--color-warn); }
+  .lx .card.critico { border: 2px solid var(--color-bad); }
+  .lx .sec.destaque { border: 2px solid var(--color-bad); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
   .lx .chip { align-self: flex-start; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); padding: 2px var(--cds-pad-sm); border-radius: 999px; border: 1px solid currentColor; }
   .lx .chip.bad { color: var(--color-bad); } .lx .chip.warn { color: var(--color-warn); } .lx .chip.ok { color: var(--color-ok); }
   .lx .mapas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--cds-gap-lg); }
@@ -167,6 +169,78 @@
       <p class="sim-msg bad" data-msg="nao-cabe" hidden>Com essas porcentagens a conta não fecha: mesmo com todos os brancos, nulos e eleitores novos para Lula, faltariam votos. Eles só podem ter vindo de eleitores de Flávio no 1º turno ou de troca de eleitores entre os turnos.</p>
       <p class="muted">Se o restante dos eleitores desses candidatos tivesse ido para Flávio, ele teria ganho <b data-draw="sim" data-out="flavio" data-source="fontes">—</b> votos; ganhou de fato <b data-draw="v" data-source="gerais" data-where="id=ganho" data-field="b" data-fmt="int">—</b>.</p>
       <span data-draw="simmsg" data-source="fontes gerais"></span>
+    </div>
+  </section>
+
+  <section class="sec destaque" id="alegacoes">
+    <span class="chip bad">Em destaque</span>
+    <h2>Alegações que circularam, conferidas urna a urna</h2>
+    <p>Refizemos cada número a partir dos <b data-draw="v" data-source="alegacoes_total" data-field="secoes" data-fmt="int">—</b> boletins de urna do 2º turno. Os números que circularam <b>conferem</b>, alguns com diferença pequena. Em seguida, cada grupo de urnas foi comparado com ele mesmo no 1º turno e com o resultado esperado pelo 1º turno de cada seção.</p>
+
+    <div class="card critico">
+      <span class="chip bad">Crítico</span>
+      <h3>Urnas com 0 votos para Flávio no 2º turno</h3>
+      <p><b data-draw="v" data-source="alegacoes_total" data-field="zero" data-fmt="int">—</b> seções deram zero voto para Flávio, somando <b data-draw="v" data-source="alegacoes_total" data-field="lula_zero" data-fmt="int">—</b> votos para Lula. Em <b data-draw="v" data-source="alegacoes_total" data-field="ate2" data-fmt="int">—</b> delas Flávio já tinha de 0 a 2 votos no 1º turno (<span data-draw="v" data-source="alegacoes_total" data-field="zero1t" data-fmt="int">—</span> com zero). São sobretudo seções do Amazonas, Maranhão, Pará e Roraima, em municípios pequenos e distantes da Amazônia e do Maranhão. No sentido contrário, 4 seções deram zero voto para Lula.</p>
+      <div class="tw">
+        <table data-source="zero_tab" data-row-key="chave">
+          <thead><tr><th data-field="cidade">Cidade</th><th data-field="zona">Zona</th><th data-field="secao">Seção</th><th data-field="flavio_2t">Votos Flávio 2º</th><th data-field="lula_2t">Votos Lula 2º</th><th data-field="flavio_1t">Votos Flávio 1º</th><th data-field="lula_1t">Votos Lula 1º</th></tr></thead>
+          <tbody data-draw="tab-zero" data-source="zero_tab"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="card tile alerta"><span class="muted">Urnas encerradas até 17h (hora local)</span><span class="num"><span data-draw="v" data-source="horario" data-where="modo=local&amp;faixa=até 17:00" data-field="pct_flavio_2t" data-fmt="num">—</span>%</span><span class="muted">de Flávio nos válidos; no 1º turno, nas mesmas urnas: <span data-draw="v" data-source="horario" data-where="modo=local&amp;faixa=até 17:00" data-field="pct_flavio_1t" data-fmt="num">—</span>%</span></div>
+      <div class="card tile alerta"><span class="muted">Urnas encerradas depois das 17h</span><span class="num" data-draw="v" data-source="alegacoes_total" data-field="margem_depois" data-fmt="int">—</span><span class="muted">de vantagem para Lula; no 1º turno: <span data-draw="v" data-source="alegacoes_total" data-field="margem_depois_1t" data-fmt="int">—</span></span></div>
+      <div class="card tile alerta"><span class="muted">Votaram sem biometria</span><span class="num" data-draw="v-curto" data-source="alegacoes" data-where="id=biometria" data-field="numero_conferido">—</span><span class="muted"><span data-draw="v" data-source="alegacoes" data-where="id=biometria" data-field="numero_alegado">—</span>; margem de Lula: <span data-draw="v" data-source="alegacoes_total" data-field="margem" data-fmt="int">—</span></span></div>
+      <div class="card tile alerta"><span class="muted">Seções com 100% para um candidato</span><span class="num" data-draw="v" data-source="alegacoes" data-where="id=cem" data-field="numero_conferido">—</span><span class="muted">Lula × Flávio; 90% ou mais: <span data-draw="v" data-source="alegacoes" data-where="id=noventa" data-field="numero_conferido">—</span></span></div>
+    </div>
+
+    <div class="sec">
+      <h3>Cada alegação: o número que circulou e o que os boletins mostram</h3>
+      <div class="grid" data-draw="alg-cards" data-source="alegacoes"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Flávio nos votos válidos, pelo horário de encerramento da urna</h3>
+        <p class="muted">Hora local gravada no boletim. As mesmas urnas no 1º turno, no 2º e o esperado para o 2º a partir do 1º. A queda de Flávio é parecida em todos os horários: as urnas que fecham cedo já davam mais votos a ele no 1º turno.</p>
+        <div class="legend"><span><span class="sw muted"></span>1º turno</span><span><span class="sw s1"></span>2º turno</span><span><span class="sw band"></span>Traço: esperado para o 2º turno</span></div>
+        <div class="chart" data-draw="horario" data-source="horario_local"></div>
+      </div>
+      <div class="card">
+        <h3>Por faixa de horário</h3>
+        <div class="tw">
+          <table data-source="horario_local" data-row-key="faixa">
+            <thead><tr><th data-field="faixa">Encerramento</th><th data-field="secoes">Seções</th><th data-field="comparecimento">Votantes</th><th data-field="pct_flavio_1t">Flávio 1º (%)</th><th data-field="pct_flavio_2t">Flávio 2º (%)</th><th data-field="pct_flavio_esperado">Esperado (%)</th><th data-field="margem_lula_1t">Margem Lula 1º</th><th data-field="margem_lula_2t">Margem Lula 2º</th></tr></thead>
+            <tbody data-draw="tab-horario" data-source="horario_local"></tbody>
+          </table>
+        </div>
+        <p class="muted">Pela lei, quem está na fila às 17h (horário de Brasília) ainda vota, e a urna só encerra depois. No Acre o horário local é 15h e no Amazonas, Rondônia, Roraima, Mato Grosso e Mato Grosso do Sul, 16h.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Seções com votação extrema</h3>
+        <div class="tw">
+          <table data-source="extremos" data-row-key="medida">
+            <thead><tr><th data-field="medida">Para um candidato</th><th data-field="lula_2t">Lula 2º</th><th data-field="flavio_2t">Flávio 2º</th><th data-field="lula_1t">Lula 1º</th><th data-field="flavio_1t">Flávio 1º</th><th data-field="lula_esperado">Lula esperado</th><th data-field="flavio_esperado">Flávio esperado</th></tr></thead>
+            <tbody data-draw="tab-extremos" data-source="extremos"></tbody>
+          </table>
+        </div>
+        <p class="muted">Em geral, seções em que um candidato já dominava o 1º turno. O "esperado" é contínuo e quase nunca chega a 100% exatos.</p>
+      </div>
+      <div class="card">
+        <h3>Eleitores sem biometria e desempenho de Lula</h3>
+        <div class="tw">
+          <table data-source="bio_quintis" data-row-key="campo,quintil">
+            <thead><tr><th data-field="campo">Contagem no BU</th><th data-field="quintil">Quinto das seções</th><th data-field="pct_sem_biometria">Sem biometria (%)</th><th data-field="lula_acima_esperado_pp">Lula acima do esperado (p.p.)</th><th data-field="lula_acima_esperado_votos">Em votos</th></tr></thead>
+            <tbody data-draw="tab-bioq" data-source="bio_quintis"></tbody>
+          </table>
+        </div>
+        <p class="muted">Seções divididas em cinco grupos iguais pela proporção de eleitores sem biometria. Se votos irregulares tivessem entrado por eleitores sem biometria, Lula ficaria acima do esperado no último grupo. Ele fica abaixo na contagem de 8.632.488 e ligeiramente acima (cerca de 54 mil votos) na outra, longe dos 4,4 milhões de margem.</p>
+      </div>
     </div>
   </section>
 
@@ -1065,6 +1139,105 @@
         const l = document.createElement('div'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = c;
         l.append(sw, `${n}: ${lxFmt(v, 'signed')} votos por seção`); tip.appendChild(l);
       }
+      lxPlace(box, tip, mx, my);
+    }).on('pointerleave', () => { tip.hidden = true; });
+  });
+</script>
+
+<script>
+  // Alegações conferidas
+  dash.calc('alegacoes_total', {
+    inputs: ['zero_flavio', 'horario', 'totais'],
+    title: 'Resumo das alegações',
+    description: 'Contagens das seções com zero voto para Flávio e vantagem de Lula nas urnas encerradas depois das 17h, no 1º e no 2º turno.',
+    fn: (zero, horario, totais) => {
+      const dep = horario.filter((r) => r.modo === 'local' && r.faixa !== 'até 17:00');
+      const soma = (rows, c) => rows.reduce((s, r) => s + Number(r[c]), 0);
+      const tot = (item) => Number((totais.find((r) => r.item === item) || {}).oficial_2t);
+      return [{secoes: 499205, zero: zero.length, lula_zero: soma(zero, 'lula_2t'),
+        ate2: zero.filter((r) => r.flavio_1t !== '' && Number(r.flavio_1t) <= 2).length,
+        zero1t: zero.filter((r) => r.flavio_1t !== '' && Number(r.flavio_1t) === 0).length,
+        margem_depois: soma(dep, 'margem_lula_2t'), margem_depois_1t: soma(dep, 'margem_lula_1t'),
+        margem: tot('Lula') - tot('Flávio')}];
+    },
+  });
+  dash.calc('zero_tab', {
+    inputs: ['zero_flavio'],
+    title: 'Seções com zero voto para Flávio',
+    description: 'Seções do 2º turno sem nenhum voto para Flávio, com os votos dos dois candidatos no 1º e no 2º turno.',
+    fn: (zero) => zero.map((r) => ({...r, chave: `${r.uf}-${r.cidade}-${r.zona}-${r.secao}`, cidade: `${r.cidade} (${r.uf})`})),
+  });
+  dash.calc('horario_local', {
+    inputs: ['horario'],
+    title: 'Por horário de encerramento (hora local)',
+    description: 'Seções agrupadas pelo horário local de encerramento da urna: votos e % de Flávio no 1º turno, no 2º e no esperado.',
+    fn: (horario) => horario.filter((r) => r.modo === 'local'),
+  });
+  dash.calc('bio_quintis', {
+    inputs: ['biometria_quintis'],
+    title: 'Biometria por quinto das seções',
+    description: 'Lula acima ou abaixo do esperado pelo 1º turno, por quinto das seções ordenadas pela proporção de eleitores sem biometria.',
+    fn: (q) => q.map((r) => ({...r, campo: r.campo === 'campo3' ? 'Contagem de 8.632.488' : 'Contagem de 7.251.810'})),
+  });
+  tabela('tab-zero', {flavio_2t: 'int', lula_2t: 'int', flavio_1t: 'int', lula_1t: 'int'});
+  // Valor antes do parêntese, para caber no cartão
+  dash.draw('v-curto', (el) => {
+    const d = dash.data(el.dataset.source);
+    const row = d.status === 'ok' ? lxPick(d.data, el.dataset.where) : null;
+    el.textContent = row ? String(row[el.dataset.field]).split(' (')[0] : '—';
+  });
+  // Uma alegação por cartão: o que circulou, o que os boletins mostram e o contexto
+  dash.draw('alg-cards', (box) => {
+    const d = dash.data('alegacoes');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    for (const r of d.data) {
+      const c = document.createElement('div'); c.className = 'card';
+      const chip = document.createElement('span'); chip.className = 'chip ok'; chip.textContent = r.situacao;
+      const h = document.createElement('h3'); h.textContent = r.alegacao;
+      const a = document.createElement('p'); a.className = 'muted'; a.textContent = `Circulou: ${r.numero_alegado}`;
+      const b = document.createElement('p'); const bb = document.createElement('b'); bb.textContent = `Nos boletins: ${r.numero_conferido}`; b.appendChild(bb);
+      const o = document.createElement('p'); o.textContent = r.o_que_mostra;
+      c.append(chip, h, a, b, o); box.appendChild(c);
+    }
+  });
+  tabela('tab-horario', {secoes: 'int', comparecimento: 'int', pct_flavio_1t: 'num', pct_flavio_2t: 'num', pct_flavio_esperado: 'num', margem_lula_1t: 'signed', margem_lula_2t: 'signed'});
+  tabela('tab-extremos', {lula_2t: 'int', flavio_2t: 'int', lula_1t: 'int', flavio_1t: 'int', lula_esperado: 'int', flavio_esperado: 'int'});
+  tabela('tab-bioq', {pct_sem_biometria: 'num', lula_acima_esperado_pp: 'signed', lula_acima_esperado_votos: 'signed'}, [],
+    (r) => Math.abs(lxNum(r.lula_acima_esperado_pp)) >= 1);
+
+  // % de Flávio por faixa de encerramento: 1º turno, 2º turno e esperado
+  dash.draw('horario', (box) => {
+    const d = dash.data('horario_local');
+    box.replaceChildren();
+    if (d.status !== 'ok') return;
+    const rows = d.data.map((r) => ({f: r.faixa, n: lxNum(r.secoes), c: lxNum(r.comparecimento), a: lxNum(r.pct_flavio_1t), b: lxNum(r.pct_flavio_2t), e: lxNum(r.pct_flavio_esperado)}));
+    const W = box.clientWidth || 500, H = 280, m = {t: 12, r: 8, b: 32, l: 40};
+    const x = d3.scaleBand(rows.map((r) => r.f), [m.l, W - m.r]).padding(0.3);
+    const xi = d3.scaleBand(['a', 'b'], [0, x.bandwidth()]).padding(0.1);
+    const y = d3.scaleLinear([Math.floor(d3.min(rows, (r) => Math.min(r.a, r.b, r.e)) - 2), Math.ceil(d3.max(rows, (r) => Math.max(r.a, r.b, r.e)) + 2)], [H - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => v + '%').tickSize(-(W - m.l - m.r))).call(lxAxis).call((g) => g.select('.domain').remove());
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickSizeOuter(0)).call(lxAxis);
+    const y50 = y(50);
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y50).attr('y2', y50).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    const g = svg.selectAll('g.f').data(rows).join('g').attr('class', 'f').attr('transform', (r) => `translate(${x(r.f)},0)`);
+    // Ponto do 1º turno ligado ao do 2º; traço = esperado para o 2º
+    const cx = (k) => xi(k) + xi.bandwidth() / 2;
+    g.append('line').attr('x1', cx('a')).attr('x2', cx('b')).attr('y1', (r) => y(r.a)).attr('y2', (r) => y(r.b)).style('stroke', 'var(--color-fg-muted)').attr('stroke-width', 1.5);
+    g.append('rect').attr('x', cx('b') - 12).attr('width', 24).attr('y', (r) => y(r.e) - 1.5).attr('height', 3).style('fill', 'var(--cds-chart-reference)');
+    g.append('circle').attr('cx', cx('a')).attr('cy', (r) => y(r.a)).attr('r', 6).style('fill', 'var(--color-fg-muted)');
+    g.append('circle').attr('cx', cx('b')).attr('cy', (r) => y(r.b)).attr('r', 6).attr('fill', lxCor.F);
+    g.append('rect').attr('x', 0).attr('width', x.bandwidth()).attr('y', m.t).attr('height', H - m.t - m.b).attr('fill', 'transparent');
+    const tip = lxTip(box);
+    g.on('pointermove', (ev, r) => {
+      const [mx, my] = d3.pointer(ev, box);
+      tip.hidden = false; tip.replaceChildren();
+      const add = (txt, cls) => { const el = document.createElement('div'); if (cls) el.className = cls; el.textContent = txt; tip.appendChild(el); };
+      add(`${r.f} · ${lxFmt(r.n, 'int')} seções · ${lxFmt(r.c, 'int')} votantes`, 't');
+      add(`Flávio 1º turno: ${lxFmt(r.a, 'num')}%`);
+      add(`Flávio 2º turno: ${lxFmt(r.b, 'num')}%`);
+      add(`Esperado: ${lxFmt(r.e, 'num')}%`);
       lxPlace(box, tip, mx, my);
     }).on('pointerleave', () => { tip.hidden = true; });
   });

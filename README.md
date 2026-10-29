@@ -18,6 +18,23 @@ Esta análise é independente. Não é publicação do TSE, de partido ou de can
 
 Os pontos de atenção (ganho de Lula maior que a "sobra" disponível em parte das seções, comparecimento que saltou em algumas seções, janelas da apuração) estão no painel com os números e as tabelas de seções para conferência individual. Os limites da análise também estão no painel: ela confere os arquivos publicados entre si; não confere se o boletim impresso afixado na seção é igual ao arquivo.
 
+## Alegações conferidas
+
+O painel abre com uma seção em destaque que confere, nos boletins de urna, números que circularam após a eleição. Todos conferem, alguns com pequena diferença. O que muda é a leitura quando cada grupo de urnas é comparado com ele mesmo no 1º turno:
+
+| Alegação | Nos boletins | Comparado com o 1º turno |
+|---|---|---|
+| 106 seções com zero voto para Flávio | 106 (e 4 com zero para Lula) | Em 90 delas Flávio já tinha 0 a 2 votos no 1º turno |
+| 100% para um candidato: 106 Lula × 4 Flávio | 106 × 4 | No 1º turno, 80 × 8 |
+| 90% ou mais: 6.899 Lula × 384 Flávio | 6.899 × 384 | No 1º turno, 6.099 × 726; esperado pelo 1º turno, 8.676 × 445 |
+| Urnas encerradas até 17h: Flávio 52,39%, +1,8 mi | 52,40%, +1.748.468 | Nas mesmas urnas, no 1º turno: 55,20%, +3.397.055 |
+| Urnas encerradas depois das 17h: Lula +6,1 mi | +6.150.002 | Nas mesmas urnas Lula já vencia o 1º turno por 1.158.603 |
+| 674.799 votantes em urnas encerradas entre 17h16 e 18h59 | 657.545 (hora local) ou 675.796 (Brasília) | Flávio −0,16 ponto do esperado |
+| 1.856.306 votantes em urnas encerradas às 19h ou depois | 1.858.274 (hora local) ou 1.861.259 (Brasília) | Flávio −0,36 ponto do esperado |
+| 8.632.488 votaram sem biometria (6,73%) | 8.632.488 (6,73%) | Onde há mais desses eleitores, Lula ficou 0,24 ponto **abaixo** do esperado |
+
+Script: [`analise/conferir_alegacoes.py`](analise/conferir_alegacoes.py). Dados: `docs/dados/alegacoes.csv`, `zero_flavio.csv`, `horario.csv`, `extremos.csv`, `biometria_quintis.csv`.
+
 ## Arquivos do TSE
 
 Os arquivos originais não cabem no repositório (vários GB) e estão nos **Releases** (`arquivos-tse-v1`), sem alteração:
