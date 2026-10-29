@@ -1145,6 +1145,24 @@
 </script>
 
 <script>
+  // Este bloco tem o próprio helper de tabela (cada <script> roda isolado no painel)
+  const tabelaA = (name, fmts, wrapCols = [], alerta = null) => dash.draw(name, (tb) => {
+    const d = dash.data(tb.dataset.source);
+    tb.replaceChildren();
+    if (d.status !== 'ok') return;
+    const cols = [...tb.closest('table').querySelectorAll('th')].map((th) => th.dataset.field);
+    for (const r of d.data) {
+      const tr = document.createElement('tr');
+      if (alerta && alerta(r)) tr.className = 'alerta';
+      for (const c of cols) {
+        const td = document.createElement('td');
+        td.textContent = fmts[c] ? lxFmt(r[c], fmts[c]) : (r[c] ?? '');
+        if (wrapCols.includes(c)) td.className = 'wrap';
+        tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+  });
   // Alegações conferidas
   dash.calc('alegacoes_total', {
     inputs: ['zero_flavio', 'horario', 'totais'],
@@ -1179,7 +1197,7 @@
     description: 'Lula acima ou abaixo do esperado pelo 1º turno, por quinto das seções ordenadas pela proporção de eleitores sem biometria.',
     fn: (q) => q.map((r) => ({...r, campo: r.campo === 'campo3' ? 'Contagem de 8.632.488' : 'Contagem de 7.251.810'})),
   });
-  tabela('tab-zero', {flavio_2t: 'int', lula_2t: 'int', flavio_1t: 'int', lula_1t: 'int'});
+  tabelaA('tab-zero', {flavio_2t: 'int', lula_2t: 'int', flavio_1t: 'int', lula_1t: 'int'});
   // Valor antes do parêntese, para caber no cartão
   dash.draw('v-curto', (el) => {
     const d = dash.data(el.dataset.source);
@@ -1201,9 +1219,9 @@
       c.append(chip, h, a, b, o); box.appendChild(c);
     }
   });
-  tabela('tab-horario', {secoes: 'int', comparecimento: 'int', pct_flavio_1t: 'num', pct_flavio_2t: 'num', pct_flavio_esperado: 'num', margem_lula_1t: 'signed', margem_lula_2t: 'signed'});
-  tabela('tab-extremos', {lula_2t: 'int', flavio_2t: 'int', lula_1t: 'int', flavio_1t: 'int', lula_esperado: 'int', flavio_esperado: 'int'});
-  tabela('tab-bioq', {pct_sem_biometria: 'num', lula_acima_esperado_pp: 'signed', lula_acima_esperado_votos: 'signed'}, [],
+  tabelaA('tab-horario', {secoes: 'int', comparecimento: 'int', pct_flavio_1t: 'num', pct_flavio_2t: 'num', pct_flavio_esperado: 'num', margem_lula_1t: 'signed', margem_lula_2t: 'signed'});
+  tabelaA('tab-extremos', {lula_2t: 'int', flavio_2t: 'int', lula_1t: 'int', flavio_1t: 'int', lula_esperado: 'int', flavio_esperado: 'int'});
+  tabelaA('tab-bioq', {pct_sem_biometria: 'num', lula_acima_esperado_pp: 'signed', lula_acima_esperado_votos: 'signed'}, [],
     (r) => Math.abs(lxNum(r.lula_acima_esperado_pp)) >= 1);
 
   // % de Flávio por faixa de encerramento: 1º turno, 2º turno e esperado
